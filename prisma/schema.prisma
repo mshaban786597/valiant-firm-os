@@ -1,0 +1,675 @@
+// Valiant Firm Agency OS — PostgreSQL (Supabase-compatible)
+// Enable RLS in Supabase with policies on organization_id after migrate.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  Raw
+  Qualified
+  OutreachQueue
+  InSequence
+  Replied
+  CallBooked
+  ProposalSent
+  ClosedWon
+  ClosedLost
+  Archived
+}
+
+enum DealStage {
+  Outreach
+  Replied
+  CallBooked
+  ProposalSent
+  Negotiation
+  ClosedWon
+  ClosedLost
+}
+
+enum ClientStatus {
+  Onboarding
+  Active
+  AtRisk
+  Paused
+  Churned
+}
+
+enum TaskStatus {
+  Backlog
+  InProgress
+  QA
+  Completed
+  Blocked
+}
+
+enum ContentStatus {
+  Brief
+  Draft
+  QA
+  Approved
+  Published
+  Indexed
+}
+
+enum ReportStatus {
+  Draft
+  QA
+  Sent
+}
+
+enum RankRentStatus {
+  Research
+  DomainPurchased
+  SiteBuilt
+  ContentPublished
+  Ranking
+  LeadGenerating
+  Rented
+  Sold
+}
+
+enum SaaSRoadmapStatus {
+  Idea
+  Discovery
+  MVP
+  Beta
+  Live
+}
+
+enum InvoiceStatus {
+  Draft
+  Open
+  Paid
+  Void
+}
+
+enum TaskPriority {
+  Low
+  Medium
+  High
+  Critical
+}
+
+enum QaStatus {
+  None
+  Pending
+  Passed
+  Failed
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members         OrganizationMember[]
+  leads           Lead[]
+  leadScores      LeadScore[]
+  outreachMsgs    OutreachMessage[]
+  deals           Deal[]
+  clients         Client[]
+  onboardingItems OnboardingItem[]
+  tasks           Task[]
+  contentItems    ContentItem[]
+  keywords        Keyword[]
+  reports         Report[]
+  healthSnapshots HealthScoreSnapshot[]
+  automationLogs  AutomationLog[]
+  aiLogs          AiLog[]
+  rankRentAssets  RankRentAsset[]
+  saasProducts    SaasProduct[]
+  invoices        Invoice[]
+  settings        Setting[]
+  founderAlerts   FounderAlert[]
+  auditLogs       AuditLog[]
+}
+
+model Role {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  label     String
+  createdAt DateTime @default(now())
+
+  members OrganizationMember[]
+}
+
+model User {
+  id             String    @id @default(uuid())
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  image          String?
+  passwordHash   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships OrganizationMember[]
+  auditLogs   AuditLog[]
+}
+
+model OrganizationMember {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String
+  roleId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role         Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Lead {
+  id               String     @id @default(uuid())
+  organizationId   String
+  businessName     String
+  niche            String
+  city             String
+  state            String
+  websiteUrl       String?
+  phone            String?
+  email            String?
+  source           String?
+  domainAuthority  Int?
+  reviewCount      Int?
+  starRating       Float?
+  gbpStatus        String?
+  websiteStatus    String?
+  weaknessTags     String[]   @default([])
+  leadScore        Int?
+  status           LeadStatus @default(Raw)
+  recommendedOffer String?
+  outreachAngle    String?
+  outreachQueuedAt DateTime?
+  sequenceStartedAt DateTime?
+  sequenceDay      Int?
+  manualOpened     Boolean    @default(false)
+  manualReplied    Boolean    @default(false)
+  manualBooked     Boolean    @default(false)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scores       LeadScore[]
+  outreach     OutreachMessage[]
+  deals        Deal[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([leadScore])
+  @@index([city])
+  @@index([niche])
+  @@index([createdAt])
+  @@index([businessName])
+}
+
+model LeadScore {
+  id                   String   @id @default(uuid())
+  organizationId       String
+  leadId               String
+  compositeScore       Int
+  seoWeaknessScore     Int
+  gbpScore             Int
+  reviewVelocityScore  Int
+  websiteQualityScore  Int
+  businessSignalScore  Int
+  weaknessTags         String[] @default([])
+  recommendedOffer     String?
+  firstEmailHook       String?
+  outreachAngle        String?
+  priorityStatus       String
+  reasoningSummary     String?
+  createdAt            DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([compositeScore])
+  @@index([createdAt])
+}
+
+model OutreachMessage {
+  id             String   @id @default(uuid())
+  organizationId String
+  leadId         String
+  channel        String
+  dayOffset      Int?
+  subject        String?
+  body           String   @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([organizationId])
+}
+
+model Deal {
+  id               String     @id @default(uuid())
+  organizationId   String
+  leadId           String?
+  businessName     String
+  contactName      String?
+  serviceInterest  String?
+  proposalValue    Decimal?   @db.Decimal(12, 2)
+  monthlyValue     Decimal?   @db.Decimal(12, 2)
+  stage            DealStage  @default(Outreach)
+  closeProbability Int?
+  callDate         DateTime?
+  notes            String?    @db.Text
+  lostReason       String?
+  proposalDraft    Json?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead?        @relation(fields: [leadId], references: [id])
+
+  @@index([organizationId])
+  @@index([stage])
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model Client {
+  id               String       @id @default(uuid())
+  organizationId   String
+  businessName     String
+  primaryContact   String?
+  email            String?
+  phone            String?
+  websiteUrl       String?
+  servicePurchased String?
+  monthlyValue     Decimal?     @db.Decimal(12, 2)
+  contractStart    DateTime?
+  status           ClientStatus @default(Onboarding)
+  healthScore      Int?
+  assignedSeoLead  String?
+  gbpLocationId    String?
+  ga4PropertyId    String?
+  gscSiteUrl       String?
+  targetLocations  String[]     @default([])
+  targetServices   String[]     @default([])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  onboardingItems OnboardingItem[]
+  tasks           Task[]
+  contentItems    ContentItem[]
+  keywords        Keyword[]
+  reports         Report[]
+  healthSnapshots HealthScoreSnapshot[]
+  invoices        Invoice[]
+  founderAlerts   FounderAlert[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([healthScore])
+  @@index([createdAt])
+}
+
+model OnboardingItem {
+  id             String    @id @default(uuid())
+  organizationId String
+  clientId       String
+  key            String
+  label          String
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, key])
+  @@index([clientId])
+}
+
+model Task {
+  id               String       @id @default(uuid())
+  organizationId   String
+  clientId         String
+  title            String
+  description      String?      @db.Text
+  serviceType      String
+  owner            String?
+  priority         TaskPriority @default(Medium)
+  status           TaskStatus   @default(Backlog)
+  dueDate          DateTime?
+  estimatedHours   Decimal?     @db.Decimal(8, 2)
+  qaStatus         QaStatus     @default(None)
+  sopLink          String?
+  weekLabel        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model ContentItem {
+  id                 String        @id @default(uuid())
+  organizationId     String
+  clientId           String
+  title              String
+  targetKeyword      String
+  secondaryKeywords  String[]      @default([])
+  location           String?
+  service            String?
+  contentType        String?
+  wordCount          Int?
+  status             ContentStatus @default(Brief)
+  seoScore           Int?
+  publishedUrl       String?
+  publishDate        DateTime?
+  internalLinks      String[]      @default([])
+  schemaType         String?
+  briefDraft         Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+  @@index([targetKeyword])
+}
+
+model Keyword {
+  id             String   @id @default(uuid())
+  organizationId String
+  clientId       String
+  phrase         String
+  volume         Int?
+  position       Int?
+  url            String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([phrase])
+}
+
+model Report {
+  id               String       @id @default(uuid())
+  organizationId   String
+  clientId         String
+  month            String
+  organicSessions  Int?
+  organicLeads     Int?
+  keywordGrowth    Int?
+  backlinkGrowth   Int?
+  gbpCalls         Int?
+  gbpViews         Int?
+  contentPublished Int?
+  tasksCompleted   Int?
+  issuesFixed      Int?
+  reportSummary    String?      @db.Text
+  nextMonthPlan    String?      @db.Text
+  aiSummary        Json?
+  status           ReportStatus @default(Draft)
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+  @@index([month])
+}
+
+model HealthScoreSnapshot {
+  id               String   @id @default(uuid())
+  organizationId   String
+  clientId         String
+  compositeScore   Int
+  rankTrendPts     Int?
+  responsePts      Int?
+  paymentPts       Int?
+  engagementPts    Int?
+  npsPts           Int?
+  goalPts          Int?
+  band             String
+  retentionNotes   String?  @db.Text
+  checkInEmail     String?  @db.Text
+  createdAt        DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([compositeScore])
+  @@index([createdAt])
+}
+
+model FounderAlert {
+  id             String   @id @default(uuid())
+  organizationId String
+  clientId       String?
+  title          String
+  body           String   @db.Text
+  severity       String
+  dismissed      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id])
+
+  @@index([organizationId])
+  @@index([dismissed])
+}
+
+model AutomationLog {
+  id              String    @id @default(uuid())
+  organizationId  String
+  name            String
+  trigger         String
+  status          String
+  lastRun         DateTime?
+  successCount    Int       @default(0)
+  failureCount    Int       @default(0)
+  errorMessage    String?   @db.Text
+  connectedTools  String[]  @default([])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([name])
+}
+
+model AiLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  agentName      String
+  inputType      String
+  outputType     String
+  tokensUsed     Int?
+  costEstimate   Decimal? @db.Decimal(12, 4)
+  status         String
+  relatedRecord  String?
+  payloadIn      Json?
+  payloadOut     Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([agentName])
+  @@index([createdAt])
+  @@index([status])
+}
+
+model RankRentAsset {
+  id               String         @id @default(uuid())
+  organizationId   String
+  niche            String
+  city             String
+  state            String
+  domain           String
+  status           RankRentStatus @default(Research)
+  targetKeywords   String[]       @default([])
+  pagesPublished   Int?
+  organicTraffic   Int?
+  leadsGenerated   Int?
+  renterStatus     String?
+  monthlyRevenue   Decimal?       @db.Decimal(12, 2)
+  rankStatus       String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([city])
+  @@index([niche])
+}
+
+model SaasProduct {
+  id             String            @id @default(uuid())
+  organizationId String
+  productName    String
+  targetUser     String
+  coreFeatures   String[]          @default([])
+  mvpScope       String?           @db.Text
+  pricingModel   String?
+  status         SaaSRoadmapStatus @default(Idea)
+  priority       Int               @default(3)
+  launchPhase    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+  @@map("SaaSProduct")
+}
+
+model Invoice {
+  id             String        @id @default(uuid())
+  organizationId String
+  clientId       String?
+  amount         Decimal       @db.Decimal(12, 2)
+  currency       String        @default("USD")
+  status         InvoiceStatus @default(Draft)
+  issuedAt       DateTime?
+  paidAt         DateTime?
+  stripeRef      String?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id])
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([status])
+}
+
+model Setting {
+  id             String   @id @default(uuid())
+  organizationId String
+  key            String
+  value          Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, key])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  userId         String?
+  action         String
+  entity         String
+  entityId       String?
+  meta           Json?
+  ip             String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([createdAt])
+  @@index([entity])
+}
