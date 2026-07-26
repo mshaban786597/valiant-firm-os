@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LeadStatus } from "@prisma/client";
 import { PageShell } from "@/components/layout/page-shell";
 import { LeadsToolbar } from "@/components/leads/lead-form-modal";
+import { LeadsImportExport } from "@/components/leads/leads-import-export";
 import { ScoreBadge } from "@/components/ui/score-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -64,7 +65,15 @@ export default async function LeadsPage({
   };
 
   return (
-    <PageShell title="Lead Database" actions={<LeadsToolbar />}>
+    <PageShell
+      title="Lead Database"
+      actions={
+        <div className="flex items-center gap-2">
+          <LeadsImportExport />
+          <LeadsToolbar />
+        </div>
+      }
+    >
       <form className="rounded-xl border border-card-border bg-card p-4">
         <div className="grid gap-3 md:grid-cols-5">
           <input

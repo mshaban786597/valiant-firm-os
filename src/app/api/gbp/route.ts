@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gbpCreateSchema } from "@/lib/schemas/gbp";
 import { sampleGbpInsights } from "@/lib/integrations/sample";
+import { autoCompleteOnboardingItem } from "@/lib/onboarding";
 
 export async function GET() {
   const org = await requireApiOrg();
@@ -72,6 +73,11 @@ export async function POST(req: Request) {
       lastSyncAt: new Date(),
     },
   });
+
+  // Auto-progress onboarding when a GBP is linked to a client.
+  if (location.clientId) {
+    await autoCompleteOnboardingItem(location.clientId, "gbp_access_received");
+  }
 
   await writeAuditLog({
     organizationId: org.organizationId,

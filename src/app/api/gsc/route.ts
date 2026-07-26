@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gscCreateSchema } from "@/lib/schemas/gsc";
+import { autoCompleteOnboardingItem } from "@/lib/onboarding";
 
 export async function GET() {
   const org = await requireApiOrg();
@@ -64,6 +65,10 @@ export async function POST(req: Request) {
       verified: data.verified ?? false,
     },
   });
+
+  if (property.clientId) {
+    await autoCompleteOnboardingItem(property.clientId, "gsc_access_received");
+  }
 
   await writeAuditLog({
     organizationId: org.organizationId,
