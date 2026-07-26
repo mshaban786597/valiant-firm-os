@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "data:audit-demo": "tsx scripts/demo-data.ts",
     "data:clean-demo": "tsx scripts/demo-data.ts --clean",
+    "auth:reset-founder": "tsx scripts/reset-founder-password.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",

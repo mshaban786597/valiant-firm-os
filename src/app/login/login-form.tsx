@@ -4,13 +4,30 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+// Map NextAuth error codes to safe, user-facing copy (never leak internals).
+function messageForError(code: string | null | undefined): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "CredentialsSignin":
+      return "Invalid email or password.";
+    case "Configuration":
+    case "ServiceUnavailable":
+      return "Sign-in is temporarily unavailable. Please try again shortly.";
+    default:
+      return "Something went wrong. Please try again.";
+  }
+}
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const callbackUrl = params.get("callbackUrl") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  // Pick up an error passed back via redirect (e.g. Configuration errors).
+  const [error, setError] = useState<string | null>(() =>
+    messageForError(params.get("error")),
+  );
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -25,7 +42,7 @@ export function LoginForm() {
     });
     setLoading(false);
     if (res?.error) {
-      setError("Invalid credentials.");
+      setError(messageForError(res.error) ?? "Invalid email or password.");
       return;
     }
     router.push(callbackUrl);
@@ -87,9 +104,7 @@ export function LoginForm() {
           </button>
         </form>
         <p className="mt-6 text-xs text-muted">
-          Production auth uses Postgres-backed sessions. Configure{" "}
-          <code className="rounded bg-background px-1 py-0.5">DATABASE_URL</code>{" "}
-          and run migrations + seed for demo credentials.
+          Authorized Valiant Firm team members only.
         </p>
       </div>
     </div>
