@@ -1,6 +1,7 @@
 import {
   ClientStatus,
   DealStage,
+  InvoiceStatus,
   LeadStatus,
   ReportStatus,
 } from "@prisma/client";
@@ -99,4 +100,12 @@ export const REPORT_TRANSITIONS: TransitionMap<ReportStatus> = {
   [ReportStatus.Draft]: [ReportStatus.QA],
   [ReportStatus.QA]: [ReportStatus.Draft, ReportStatus.Sent],
   [ReportStatus.Sent]: [],
+};
+
+// Invoice billing flow: draft → open → paid (terminal). Draft/Open can be voided.
+export const INVOICE_TRANSITIONS: TransitionMap<InvoiceStatus> = {
+  [InvoiceStatus.Draft]: [InvoiceStatus.Open, InvoiceStatus.Void],
+  [InvoiceStatus.Open]: [InvoiceStatus.Paid, InvoiceStatus.Void],
+  [InvoiceStatus.Paid]: [],
+  [InvoiceStatus.Void]: [],
 };
