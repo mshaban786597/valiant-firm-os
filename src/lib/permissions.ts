@@ -17,6 +17,8 @@ export const ROLE_KEYS = [
   "MANAGER",
   "OPS",
   "SALES",
+  "FINANCE",
+  "DELIVERY",
   "SEO_SPECIALIST",
   "ADS_SPECIALIST",
   "STAFF",
@@ -109,6 +111,10 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
   ],
   // Sales: leads + pipeline, read the rest.
   SALES: [...READ_ONLY, "lead.write", "deal.write"],
+  // Finance: billing + invoices, read the rest.
+  FINANCE: [...READ_ONLY, "invoice.write"],
+  // Delivery: task execution + reporting, read the rest.
+  DELIVERY: [...READ_ONLY, "task.write", "report.write"],
   // SEO specialist: manages GBP/GSC integrations, tasks, reports.
   SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write"],
   // Ads specialist: manages Ads integrations, tasks, reports.

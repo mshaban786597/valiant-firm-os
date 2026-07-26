@@ -36,6 +36,16 @@ describe("RBAC can()", () => {
     expect(can("SALES", "invoice.write")).toBe(false);
   });
 
+  it("scopes FINANCE to billing and DELIVERY to tasks/reports", () => {
+    expect(can("FINANCE", "invoice.write")).toBe(true);
+    expect(can("FINANCE", "lead.write")).toBe(false);
+    expect(can("FINANCE", "task.write")).toBe(false);
+    expect(can("DELIVERY", "task.write")).toBe(true);
+    expect(can("DELIVERY", "report.write")).toBe(true);
+    expect(can("DELIVERY", "invoice.write")).toBe(false);
+    expect(can("DELIVERY", "org.members")).toBe(false);
+  });
+
   it("lets MANAGER run delivery/billing but not own the org", () => {
     expect(can("MANAGER", "invoice.write")).toBe(true);
     expect(can("MANAGER", "report.send")).toBe(true);
