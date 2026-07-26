@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyWebhookSignature } from "@/lib/webhooks";
 import { prisma } from "@/lib/prisma";
+import { telemetry } from "@/lib/telemetry";
 
 /**
  * Generic automation ingress for Make/n8n.
@@ -21,6 +22,10 @@ export async function POST(req: Request) {
   if (process.env.WEBHOOK_SECRET) {
     const ok = verifyWebhookSignature(raw, signature);
     if (!ok) {
+      await telemetry.warn({
+        source: "webhook.automation",
+        message: "Rejected webhook: invalid HMAC signature",
+      });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
   }
@@ -70,6 +75,13 @@ export async function POST(req: Request) {
       errorMessage: errorMessage ?? undefined,
       connectedTools,
     },
+  });
+
+  await telemetry[status === "success" ? "info" : "error"]({
+    source: "webhook.automation",
+    message: `Automation "${name}" ingested with status=${status}`,
+    organizationId: organization.id,
+    meta: { automationId: row.id, connectedTools, errorMessage },
   });
 
   return NextResponse.json({ ok: true, automation_id: row.id });
