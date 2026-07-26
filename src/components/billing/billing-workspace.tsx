@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast-provider";
+import { useCan } from "@/components/providers/permissions-provider";
 import { errorMessageFromResponse } from "@/lib/api-error";
 import { formatCents, invoiceTotals, toCents } from "@/lib/money";
 
@@ -43,6 +44,7 @@ export function BillingWorkspace({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const canWrite = useCan()("invoice.write");
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -75,15 +77,17 @@ export function BillingWorkspace({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="rounded-lg bg-valiant px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_40px_rgba(211,4,4,0.25)]"
-        >
-          New invoice
-        </button>
-      </div>
+      {canWrite ? (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="rounded-lg bg-valiant px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_40px_rgba(211,4,4,0.25)]"
+          >
+            New invoice
+          </button>
+        </div>
+      ) : null}
 
       {invoices.length === 0 ? (
         <EmptyState
@@ -122,7 +126,8 @@ export function BillingWorkspace({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
-                      {inv.status === "Draft" && (
+                      {!canWrite && <span className="text-xs text-muted">—</span>}
+                      {canWrite && inv.status === "Draft" && (
                         <>
                           <ActionBtn
                             label="Send"
@@ -137,7 +142,7 @@ export function BillingWorkspace({
                           />
                         </>
                       )}
-                      {inv.status === "Open" && (
+                      {canWrite && inv.status === "Open" && (
                         <>
                           <ActionBtn
                             label="Mark paid"
@@ -152,7 +157,7 @@ export function BillingWorkspace({
                           />
                         </>
                       )}
-                      {(inv.status === "Paid" || inv.status === "Void") && (
+                      {canWrite && (inv.status === "Paid" || inv.status === "Void") && (
                         <span className="text-xs text-muted">—</span>
                       )}
                     </div>

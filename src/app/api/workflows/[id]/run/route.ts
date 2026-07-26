@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { runWorkflow } from "@/lib/automations/engine";
 
@@ -12,7 +12,7 @@ export async function POST(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("automation.write");
   if (!org.ok) return org.response;
 
   const workflow = await prisma.workflow.findFirst({

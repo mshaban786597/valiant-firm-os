@@ -1,6 +1,7 @@
 import { InvoiceStatus, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { invoiceCreateSchema } from "@/lib/schemas/invoice";
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("invoice.write");
   if (!org.ok) return org.response;
 
   const json = await req.json().catch(() => null);

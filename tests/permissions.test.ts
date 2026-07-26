@@ -47,8 +47,11 @@ describe("RBAC can()", () => {
     expect(can("STAFF", "task.write")).toBe(true);
     expect(can("STAFF", "lead.write")).toBe(false);
     expect(can("SEO_SPECIALIST", "report.write")).toBe(true);
+    expect(can("SEO_SPECIALIST", "integration.write")).toBe(true);
     expect(can("SEO_SPECIALIST", "invoice.write")).toBe(false);
     expect(can("ADS_SPECIALIST", "task.write")).toBe(true);
+    expect(can("VIEWER", "integration.write")).toBe(false);
+    expect(can("VIEWER", "email.write")).toBe(false);
   });
 
   it("never grants a write without the matching read", () => {
@@ -59,6 +62,8 @@ describe("RBAC can()", () => {
       "task.write": "task.read",
       "report.write": "report.read",
       "invoice.write": "invoice.read",
+      "integration.write": "integration.read",
+      "email.write": "email.read",
       "automation.write": "automation.read",
     };
     for (const role of ["MANAGER", "OPS", "SALES", "STAFF", "SEO_SPECIALIST"]) {

@@ -6,7 +6,7 @@ import {
 } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { ensureOnboardingChecklist } from "@/lib/onboarding";
 import { writeAuditLog } from "@/lib/audit";
@@ -33,7 +33,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } },
 ) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("deal.write");
   if (!org.ok) return org.response;
 
   const json = await req.json().catch(() => null);
@@ -144,7 +144,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("deal.write");
   if (!org.ok) return org.response;
 
   const existing = await prisma.deal.findFirst({

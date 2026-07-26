@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { workflowCreateSchema } from "@/lib/automations/types";
@@ -18,7 +19,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("automation.write");
   if (!org.ok) return org.response;
 
   const json = await req.json().catch(() => null);

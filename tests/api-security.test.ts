@@ -67,10 +67,11 @@ describe("API security — /api/leads", () => {
     expect(where.organizationId).not.toBe("org_B");
   });
 
-  it("rejects an invalid POST payload with 400 (after auth passes)", async () => {
+  it("rejects an invalid POST payload with 400 (after auth + permission pass)", async () => {
     getServerSession.mockResolvedValue({
       user: { id: "u1" },
       organizationId: "org_A",
+      role: "MANAGER",
     });
     const res = await POST(
       req("http://localhost/api/leads", {
@@ -80,5 +81,38 @@ describe("API security — /api/leads", () => {
     );
     expect(res.status).toBe(400);
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it("forbids a VIEWER from creating a lead (RBAC 403)", async () => {
+    getServerSession.mockResolvedValue({
+      user: { id: "u1" },
+      organizationId: "org_A",
+      role: "VIEWER",
+    });
+    const res = await POST(
+      req("http://localhost/api/leads", {
+        method: "POST",
+        body: JSON.stringify({ businessName: "B", niche: "n", city: "c", state: "s" }),
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("allows a MANAGER to create a valid lead", async () => {
+    getServerSession.mockResolvedValue({
+      user: { id: "u1" },
+      organizationId: "org_A",
+      role: "MANAGER",
+    });
+    create.mockResolvedValue({ id: "lead_1", businessName: "B", niche: "n" });
+    const res = await POST(
+      req("http://localhost/api/leads", {
+        method: "POST",
+        body: JSON.stringify({ businessName: "B", niche: "n", city: "c", state: "s" }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 });

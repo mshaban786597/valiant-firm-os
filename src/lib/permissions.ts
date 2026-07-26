@@ -45,7 +45,13 @@ export const ACTIONS = [
   // billing
   "invoice.read",
   "invoice.write",
-  // automation / integrations
+  // marketing integrations (GBP / GSC / Ads)
+  "integration.read",
+  "integration.write",
+  // email campaigns
+  "email.read",
+  "email.write",
+  // automation / workflows
   "automation.read",
   "automation.write",
   // org administration
@@ -66,6 +72,8 @@ const READ_ONLY: Action[] = [
   "task.read",
   "report.read",
   "invoice.read",
+  "integration.read",
+  "email.read",
   "automation.read",
 ];
 
@@ -73,7 +81,7 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
   // Full control.
   FOUNDER: ALL,
   ADMIN: ALL,
-  // Runs delivery + reporting + billing, but not org ownership actions.
+  // Runs delivery + reporting + billing + marketing, but not org ownership.
   MANAGER: [
     ...READ_ONLY,
     "lead.write",
@@ -83,23 +91,28 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "report.write",
     "report.send",
     "invoice.write",
+    "integration.write",
+    "email.write",
     "automation.write",
     "audit.read",
   ],
-  // Operations: delivery + reporting, no billing/members.
+  // Operations: delivery + reporting + marketing ops, no billing/members.
   OPS: [
     ...READ_ONLY,
     "client.write",
     "task.write",
     "report.write",
     "report.send",
+    "integration.write",
+    "email.write",
     "automation.write",
   ],
   // Sales: leads + pipeline, read the rest.
   SALES: [...READ_ONLY, "lead.write", "deal.write"],
-  // Specialists: delivery/tasks + reports in their lane, read the rest.
-  SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write"],
-  ADS_SPECIALIST: [...READ_ONLY, "task.write", "report.write"],
+  // SEO specialist: manages GBP/GSC integrations, tasks, reports.
+  SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write"],
+  // Ads specialist: manages Ads integrations, tasks, reports.
+  ADS_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write"],
   // Staff: task execution only.
   STAFF: [...READ_ONLY, "task.write"],
   // Viewer: strictly read-only.

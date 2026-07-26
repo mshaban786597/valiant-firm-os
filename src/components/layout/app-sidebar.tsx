@@ -11,6 +11,7 @@ import {
   CreditCard,
   Gauge,
   HeartPulse,
+  History,
   Layers,
   LineChart,
   Mail,
@@ -19,6 +20,7 @@ import {
   Radar,
   Rocket,
   Search,
+  SearchCode,
   Settings,
   Users,
   Workflow,
@@ -44,6 +46,8 @@ const NAV = [
   { href: "/ai-logs", label: "AI Logs", icon: Bot },
   { href: "/rank-rent", label: "Rank & Rent", icon: Radar },
   { href: "/saas-roadmap", label: "SaaS Roadmap", icon: Rocket },
+  { href: "/search", label: "Search", icon: SearchCode },
+  { href: "/activity", label: "Activity", icon: History },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

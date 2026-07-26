@@ -2,7 +2,7 @@ import { LeadStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { computeLeadScore } from "@/lib/ai/compute-lead-score";
 import { logAiEvent } from "@/lib/ai/log";
-import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { mapLeadToScoreInput } from "@/lib/mappers/lead";
 import { prisma } from "@/lib/prisma";
 import { pickAssignee } from "@/lib/automations/assign";
@@ -12,7 +12,7 @@ export async function POST(
   _req: Request,
   { params }: { params: { id: string } },
 ) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
 
   const lead = await prisma.lead.findFirst({

@@ -22,6 +22,8 @@ const PROTECTED_PREFIXES = [
   "/ai-logs",
   "/rank-rent",
   "/saas-roadmap",
+  "/search",
+  "/activity",
   "/settings",
 ];
 

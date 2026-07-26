@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-org";
+import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gscCreateSchema } from "@/lib/schemas/gsc";
@@ -21,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const org = await requireApiOrg();
+  const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 
   const json = await req.json().catch(() => null);
