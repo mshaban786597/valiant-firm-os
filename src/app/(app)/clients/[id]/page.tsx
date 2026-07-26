@@ -36,9 +36,15 @@ export default async function ClientDetailPage({
 
   return (
     <PageShell title={client.businessName}>
-      <div className="text-sm text-muted">
+      <div className="flex items-center justify-between text-sm text-muted">
         <Link href="/clients" className="text-valiant hover:underline">
           ← Clients
+        </Link>
+        <Link
+          href={`/clients/${params.id}/portal`}
+          className="rounded-lg border border-card-border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-card"
+        >
+          Client portal ↗
         </Link>
       </div>
 
