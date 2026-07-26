@@ -5,6 +5,8 @@ import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
 import { mapLeadToScoreInput } from "@/lib/mappers/lead";
 import { prisma } from "@/lib/prisma";
+import { pickAssignee } from "@/lib/automations/assign";
+import { runTrigger } from "@/lib/automations/engine";
 
 export async function POST(
   _req: Request,
@@ -45,21 +47,43 @@ export async function POST(
     LeadStatus.Qualified,
   ]);
 
-  const nextStatus =
-    score.composite_score >= 65 && preOutreach.has(lead.status)
-      ? LeadStatus.OutreachQueue
-      : lead.status;
+  const queueing = score.composite_score >= 65 && preOutreach.has(lead.status);
+  const nextStatus = queueing ? LeadStatus.OutreachQueue : lead.status;
+
+  // Auto-assign to an eligible rep, deterministically by lead id, if unassigned.
+  let assignedToId = lead.assignedToId;
+  if (!assignedToId) {
+    const members = await prisma.organizationMember.findMany({
+      where: { organizationId: org.organizationId },
+      select: { userId: true, role: { select: { key: true } } },
+    });
+    assignedToId = pickAssignee(
+      members.map((m) => ({ userId: m.userId, roleKey: m.role.key })),
+      lead.id,
+    );
+  }
 
   await prisma.lead.update({
     where: { id: lead.id },
     data: {
       leadScore: score.composite_score,
+      scoreVersion: { increment: 1 },
+      assignedToId,
       weaknessTags: score.weakness_tags,
       recommendedOffer: score.recommended_offer,
       outreachAngle: score.outreach_angle,
       status: nextStatus,
+      outreachQueuedAt: queueing ? new Date() : lead.outreachQueuedAt,
     },
   });
+
+  // Fire automation workflows reacting to a fresh score (best-effort).
+  await runTrigger("lead_scored", {
+    organizationId: org.organizationId,
+    userId: org.userId,
+    leadId: lead.id,
+    payload: { compositeScore: score.composite_score, queued: queueing },
+  }).catch(() => {});
 
   await logAiEvent({
     organizationId: org.organizationId,

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireApiOrg } from "@/lib/api-org";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
+import { runTrigger } from "@/lib/automations/engine";
 
 const leadCreateSchema = z.object({
   businessName: z.string(),
@@ -98,6 +99,13 @@ export async function POST(req: Request) {
     entity: "Lead",
     entityId: lead.id,
   });
+
+  await runTrigger("lead_created", {
+    organizationId: org.organizationId,
+    userId: org.userId,
+    leadId: lead.id,
+    payload: { businessName: lead.businessName, niche: lead.niche },
+  }).catch(() => {});
 
   return NextResponse.json({ lead });
 }

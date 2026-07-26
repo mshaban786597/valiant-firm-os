@@ -138,6 +138,7 @@ model Organization {
   googleAdsCampaigns GoogleAdsCampaign[]
   emailCampaigns     EmailCampaign[]
   portalTokens       ClientPortalToken[]
+  workflows          Workflow[]
 }
 
 model Role {
@@ -236,6 +237,8 @@ model Lead {
   websiteStatus    String?
   weaknessTags     String[]   @default([])
   leadScore        Int?
+  scoreVersion     Int        @default(0)
+  assignedToId     String?
   status           LeadStatus @default(Raw)
   recommendedOffer String?
   outreachAngle    String?
@@ -260,6 +263,7 @@ model Lead {
   @@index([niche])
   @@index([createdAt])
   @@index([businessName])
+  @@index([assignedToId])
 }
 
 model LeadScore {
@@ -841,6 +845,25 @@ model EmailRecipient {
 
   @@index([campaignId])
   @@index([email])
+}
+
+model Workflow {
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  trigger        String // lead_created | lead_scored | deal_won | client_at_risk | report_due | gbp_review | webhook_received
+  actions        Json      @default("[]") // [{ type, config }]
+  enabled        Boolean   @default(true)
+  lastRunAt      DateTime?
+  runCount       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([trigger])
+  @@index([enabled])
 }
 
 model ClientPortalToken {

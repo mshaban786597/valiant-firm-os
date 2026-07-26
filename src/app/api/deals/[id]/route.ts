@@ -10,6 +10,7 @@ import { requireApiOrg } from "@/lib/api-org";
 import { prisma } from "@/lib/prisma";
 import { ensureOnboardingChecklist } from "@/lib/onboarding";
 import { writeAuditLog } from "@/lib/audit";
+import { runTrigger } from "@/lib/automations/engine";
 
 const patchSchema = z
   .object({
@@ -116,6 +117,15 @@ export async function PATCH(
         data: { status: LeadStatus.ClosedWon },
       });
     }
+
+    // Fire onboarding automations for the freshly-won client (best-effort).
+    await runTrigger("deal_won", {
+      organizationId: org.organizationId,
+      userId: org.userId,
+      dealId: deal.id,
+      clientId: client.id,
+      payload: { businessName: existing.businessName },
+    }).catch(() => {});
   }
 
   await writeAuditLog({
