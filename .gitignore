@@ -40,3 +40,6 @@ next-env.d.ts
 
 # demo-data cleanup backups (runtime artifacts)
 /backups
+
+# neon cli artifact
+.neon
