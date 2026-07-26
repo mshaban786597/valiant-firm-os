@@ -38,3 +38,14 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Print: strip app chrome so report/portal pages export cleanly to PDF. */
+@media print {
+  aside,
+  .print\:hidden {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}
