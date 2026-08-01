@@ -22,7 +22,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match the lockfile's generator (npm 11 / Node 24) so `npm ci`
+          # validates package-lock.json consistently.
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
