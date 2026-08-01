@@ -12,6 +12,7 @@
  * For a full sample environment during local development, use the separate
  * dev-only demo seed:  npm run db:seed:demo
  */
+import crypto from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -52,16 +53,35 @@ async function main() {
     create: { name: "Valiant Firm", slug: "valiant-firm" },
   });
 
-  // Founder user (credentials from env; falls back to documented demo values)
+  // Founder user. Password comes from SEED_ADMIN_PASSWORD; if unset we generate
+  // a random one (no hardcoded shared default) and print it ONCE below.
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "founder@valiantfirm.agency";
-  const passwordPlain = process.env.SEED_ADMIN_PASSWORD ?? "ValiantDemo!2026";
-  const passwordHash = await bcrypt.hash(passwordPlain, 12);
+  const providedPassword = process.env.SEED_ADMIN_PASSWORD;
+  const generated = !providedPassword;
+  const passwordPlain =
+    providedPassword ?? `Vf${crypto.randomBytes(15).toString("base64url")}!`;
 
+  // Only (re)set the password when explicitly provided, or when the user is new
+  // (avoids silently clobbering an existing founder password on every re-seed).
+  const existing = await prisma.user.findUnique({
+    where: { email: adminEmail },
+    select: { id: true },
+  });
+  const passwordHash = await bcrypt.hash(passwordPlain, 12);
   const user = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { passwordHash, name: "Founder" },
+    update: providedPassword ? { passwordHash, name: "Founder" } : { name: "Founder" },
     create: { email: adminEmail, name: "Founder", passwordHash },
   });
+
+  if (generated && !existing) {
+    console.log("\n============================================================");
+    console.log(" Founder account created with a generated password:");
+    console.log(`   Email:    ${adminEmail}`);
+    console.log(`   Password: ${passwordPlain}`);
+    console.log(" Store it now (shown once). Set SEED_ADMIN_PASSWORD to control it.");
+    console.log("============================================================\n");
+  }
 
   await prisma.organizationMember.upsert({
     where: { organizationId_userId: { organizationId: org.id, userId: user.id } },

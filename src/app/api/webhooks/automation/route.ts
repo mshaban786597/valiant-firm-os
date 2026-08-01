@@ -19,6 +19,8 @@ export async function POST(req: Request) {
   const raw = await req.text();
   const signature = req.headers.get("x-webhook-signature");
 
+  // Fail-closed: require a verified signature. Only accept unverified posts
+  // when the explicit dev escape hatch ALLOW_UNVERIFIED_WEBHOOKS=true is set.
   if (process.env.WEBHOOK_SECRET) {
     const ok = verifyWebhookSignature(raw, signature);
     if (!ok) {
@@ -28,6 +30,15 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
+  } else if (process.env.ALLOW_UNVERIFIED_WEBHOOKS !== "true") {
+    await telemetry.warn({
+      source: "webhook.automation",
+      message: "Rejected webhook: WEBHOOK_SECRET not configured (fail-closed)",
+    });
+    return NextResponse.json(
+      { error: "Webhook verification not configured" },
+      { status: 401 },
+    );
   }
 
   let payload: Record<string, unknown>;

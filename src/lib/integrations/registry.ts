@@ -87,9 +87,10 @@ export interface VerificationResult {
 }
 
 /**
- * Verify an inbound webhook. When no secret is configured for the provider the
- * request is accepted but flagged `verified: false` (so integrations can be
- * wired before secrets are set). When a secret IS set, the signature must match.
+ * Verify an inbound webhook. FAIL-CLOSED: when no secret is configured for the
+ * provider the request is REJECTED, unless the explicit dev escape hatch
+ * `ALLOW_UNVERIFIED_WEBHOOKS=true` is set (then accepted, flagged unverified).
+ * When a secret IS set, the signature must match.
  */
 export function verifyWebhook(
   provider: WebhookProvider,
@@ -97,7 +98,12 @@ export function verifyWebhook(
   headers: Headers,
 ): VerificationResult {
   const secret = process.env[provider.secretEnv];
-  if (!secret) return { ok: true, verified: false, reason: "no secret configured" };
+  if (!secret) {
+    if (process.env.ALLOW_UNVERIFIED_WEBHOOKS === "true") {
+      return { ok: true, verified: false, reason: "no secret configured (dev override)" };
+    }
+    return { ok: false, verified: false, reason: "no secret configured (rejected)" };
+  }
   const ok = provider.verify(rawBody, headers, secret);
   return ok
     ? { ok: true, verified: true }

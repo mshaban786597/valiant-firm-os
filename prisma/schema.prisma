@@ -847,6 +847,19 @@ model EmailRecipient {
   @@index([email])
 }
 
+// Pre-auth login throttle. Not org-scoped (identity is not yet known); keyed by
+// email + IP with a rolling time window. Rows are disposable/prunable.
+model LoginAttempt {
+  id        String   @id @default(uuid())
+  email     String
+  ip        String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
 model Workflow {
   id             String    @id @default(uuid())
   organizationId String

@@ -10,6 +10,8 @@ function messageForError(code: string | null | undefined): string | null {
   switch (code) {
     case "CredentialsSignin":
       return "Invalid email or password.";
+    case "RateLimited":
+      return "Too many attempts. Please wait a few minutes and try again.";
     case "Configuration":
     case "ServiceUnavailable":
       return "Sign-in is temporarily unavailable. Please try again shortly.";
