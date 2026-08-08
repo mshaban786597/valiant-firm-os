@@ -68,7 +68,7 @@ export default async function ActivityPage({
           description="Every create, update, and delete across the organization shows up here."
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-card-border bg-card">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
           {logs.map((log) => (
             <div
               key={log.id}

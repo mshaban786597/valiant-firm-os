@@ -23,7 +23,7 @@ export default async function AiLogsPage() {
         Logs are created when AI routes run. You can remove incorrect or noisy rows without touching
         operational leads or clients.
       </div>
-      <div className="overflow-hidden rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>

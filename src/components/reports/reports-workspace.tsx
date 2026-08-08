@@ -56,7 +56,7 @@ export function ReportsWorkspace({
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>

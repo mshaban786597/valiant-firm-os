@@ -43,3 +43,6 @@ next-env.d.ts
 
 # neon cli artifact
 .neon
+
+.vercel
+.env*

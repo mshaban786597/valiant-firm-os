@@ -38,7 +38,7 @@ export default async function SearchPage({
               <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
                 {group.type}
               </h2>
-              <div className="overflow-hidden rounded-xl border border-card-border bg-card">
+              <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
                 {group.hits.map((hit) => (
                   <Link
                     key={`${hit.type}-${hit.id}`}

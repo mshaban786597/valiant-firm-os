@@ -2,54 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ActivitySquare,
-  BarChart3,
-  Bot,
-  Briefcase,
-  ClipboardList,
-  CreditCard,
-  Gauge,
-  HeartPulse,
-  History,
-  Layers,
-  LineChart,
-  Mail,
-  MapPin,
-  Megaphone,
-  Radar,
-  Rocket,
-  Search,
-  SearchCode,
-  Settings,
-  Users,
-  Workflow,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: Gauge },
-  { href: "/leads", label: "Leads", icon: Users },
-  { href: "/outreach", label: "Outreach", icon: Megaphone },
-  { href: "/pipeline", label: "Pipeline", icon: Layers },
-  { href: "/clients", label: "Clients", icon: Briefcase },
-  { href: "/delivery", label: "Delivery", icon: ClipboardList },
-  { href: "/content", label: "Content", icon: LineChart },
-  { href: "/reports", label: "Reports", icon: ActivitySquare },
-  { href: "/health", label: "Health", icon: HeartPulse },
-  { href: "/seo", label: "SEO / GSC", icon: Search },
-  { href: "/gbp", label: "Google Business", icon: MapPin },
-  { href: "/google-ads", label: "Google Ads", icon: BarChart3 },
-  { href: "/email-campaigns", label: "Email", icon: Mail },
-  { href: "/billing", label: "Billing", icon: CreditCard },
-  { href: "/automations", label: "Automations", icon: Workflow },
-  { href: "/ai-logs", label: "AI Logs", icon: Bot },
-  { href: "/rank-rent", label: "Rank & Rent", icon: Radar },
-  { href: "/saas-roadmap", label: "SaaS Roadmap", icon: Rocket },
-  { href: "/search", label: "Search", icon: SearchCode },
-  { href: "/activity", label: "Activity", icon: History },
-  { href: "/settings", label: "Settings", icon: Settings },
-];
+import { NAV_ITEMS, isActivePath } from "@/components/layout/nav-items";
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -65,10 +19,8 @@ export function AppSidebar() {
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-        {NAV.map(({ href, label, icon: Icon }) => {
-          const active =
-            pathname === href ||
-            (href !== "/dashboard" && pathname.startsWith(`${href}/`));
+        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          const active = isActivePath(pathname, href);
           return (
             <Link
               key={href}
