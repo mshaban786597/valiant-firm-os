@@ -8,9 +8,12 @@ type Command = { label: string; hint?: string; href: string };
 const DESTINATIONS: Command[] = [
   { label: "Dashboard", href: "/dashboard", hint: "Overview" },
   { label: "Leads", href: "/leads" },
+  { label: "Contacts", href: "/contacts" },
   { label: "Outreach", href: "/outreach" },
   { label: "Pipeline", href: "/pipeline" },
   { label: "Clients", href: "/clients" },
+  { label: "Campaigns", href: "/campaigns" },
+  { label: "Ecommerce", href: "/ecommerce" },
   { label: "Delivery / Tasks", href: "/delivery" },
   { label: "Content", href: "/content" },
   { label: "Reports", href: "/reports" },

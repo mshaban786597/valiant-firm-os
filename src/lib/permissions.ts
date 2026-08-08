@@ -40,6 +40,14 @@ export const ACTIONS = [
   "client.delete",
   "task.read",
   "task.write",
+  // crm
+  "contact.read",
+  "contact.write",
+  "campaign.read",
+  "campaign.write",
+  // ecommerce
+  "ecommerce.read",
+  "ecommerce.write",
   // reporting
   "report.read",
   "report.write",
@@ -72,6 +80,9 @@ const READ_ONLY: Action[] = [
   "deal.read",
   "client.read",
   "task.read",
+  "contact.read",
+  "campaign.read",
+  "ecommerce.read",
   "report.read",
   "invoice.read",
   "integration.read",
@@ -90,6 +101,9 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "deal.write",
     "client.write",
     "task.write",
+    "contact.write",
+    "campaign.write",
+    "ecommerce.write",
     "report.write",
     "report.send",
     "invoice.write",
@@ -103,22 +117,25 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     ...READ_ONLY,
     "client.write",
     "task.write",
+    "contact.write",
+    "campaign.write",
+    "ecommerce.write",
     "report.write",
     "report.send",
     "integration.write",
     "email.write",
     "automation.write",
   ],
-  // Sales: leads + pipeline, read the rest.
-  SALES: [...READ_ONLY, "lead.write", "deal.write"],
+  // Sales: leads + pipeline + contacts, read the rest.
+  SALES: [...READ_ONLY, "lead.write", "deal.write", "contact.write"],
   // Finance: billing + invoices, read the rest.
   FINANCE: [...READ_ONLY, "invoice.write"],
   // Delivery: task execution + reporting, read the rest.
   DELIVERY: [...READ_ONLY, "task.write", "report.write"],
-  // SEO specialist: manages GBP/GSC integrations, tasks, reports.
-  SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write"],
-  // Ads specialist: manages Ads integrations, tasks, reports.
-  ADS_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write"],
+  // SEO specialist: manages GBP/GSC integrations, tasks, reports, campaigns.
+  SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write", "campaign.write"],
+  // Ads specialist: manages Ads integrations, tasks, reports, campaigns.
+  ADS_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write", "campaign.write"],
   // Staff: task execution only.
   STAFF: [...READ_ONLY, "task.write"],
   // Viewer: strictly read-only.

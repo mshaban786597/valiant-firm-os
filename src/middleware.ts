@@ -6,9 +6,12 @@ import { authSecret } from "@/lib/auth-secret";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/leads",
+  "/contacts",
   "/outreach",
   "/pipeline",
   "/clients",
+  "/campaigns",
+  "/ecommerce",
   "/delivery",
   "/content",
   "/reports",

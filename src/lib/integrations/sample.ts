@@ -135,3 +135,55 @@ export function sampleAdsMetrics(seed: string): AdsMetrics {
     costPerConv: conversions > 0 ? Math.round(spend / conversions) : null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Ecommerce sample data (used until a real marketplace API is connected).
+// ---------------------------------------------------------------------------
+
+export interface StoreDayMetric {
+  revenueCents: number;
+  orders: number;
+  units: number;
+  sessions: number;
+  conversionRate: number;
+}
+
+/** Deterministic daily store metrics for a given day index (0 = most recent). */
+export function sampleStoreDayMetric(seed: string, dayIndex: number): StoreDayMetric {
+  const sessions = pick(seed, `sess${dayIndex}`, 40, 2000);
+  const cvr = pick(seed, `cvr${dayIndex}`, 1, 6); // 1–6%
+  const orders = Math.max(0, Math.round((sessions * cvr) / 100));
+  const units = orders + pick(seed, `u${dayIndex}`, 0, Math.max(1, orders));
+  const aovCents = pick(seed, `aov${dayIndex}`, 1500, 18000); // $15–$180 per order
+  return {
+    revenueCents: orders * aovCents,
+    orders,
+    units,
+    sessions,
+    conversionRate: sessions ? Number(((orders / sessions) * 100).toFixed(2)) : 0,
+  };
+}
+
+const PRODUCT_WORDS = ["Pro", "Max", "Lite", "Bundle", "Kit", "Classic", "Premium", "Essential"];
+
+export function sampleStoreProducts(seed: string, count = 8) {
+  return Array.from({ length: count }, (_, i) => {
+    const priceCents = pick(seed, `p${i}`, 999, 24999);
+    return {
+      title: `${PRODUCT_WORDS[i % PRODUCT_WORDS.length]} Product ${i + 1}`,
+      sku: `SKU-${seedHash(`${seed}:sku${i}`) % 100000}`,
+      priceCents,
+      inventory: pick(seed, `inv${i}`, 0, 500),
+      status: pick(seed, `st${i}`, 0, 10) === 0 ? "out_of_stock" : "active",
+    };
+  });
+}
+
+export function sampleStoreOrders(seed: string, count = 12) {
+  return Array.from({ length: count }, (_, i) => ({
+    itemCount: pick(seed, `oi${i}`, 1, 5),
+    totalCents: pick(seed, `ot${i}`, 1500, 40000),
+    status: ["paid", "shipped", "paid", "pending", "refunded"][pick(seed, `os${i}`, 0, 4)],
+    dayOffset: pick(seed, `od${i}`, 0, 29),
+  }));
+}

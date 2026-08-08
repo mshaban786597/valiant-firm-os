@@ -30,7 +30,8 @@ export async function globalSearch(
     return { query: q, total: 0, groups: [] };
   }
 
-  const [leads, clients, deals, tasks, reports, invoices] = await Promise.all([
+  const [leads, clients, deals, tasks, reports, invoices, contacts, campaigns, stores] =
+    await Promise.all([
     prisma.lead.findMany({
       where: {
         organizationId,
@@ -68,6 +69,21 @@ export async function globalSearch(
     prisma.invoice.findMany({
       where: { organizationId, OR: [{ number: ci(q) }, { notes: ci(q) }] },
       select: { id: true, number: true, status: true },
+      take: 8,
+    }),
+    prisma.contact.findMany({
+      where: { organizationId, OR: [{ name: ci(q) }, { email: ci(q) }] },
+      select: { id: true, name: true, title: true },
+      take: 8,
+    }),
+    prisma.campaign.findMany({
+      where: { organizationId, name: ci(q) },
+      select: { id: true, name: true, channel: true },
+      take: 8,
+    }),
+    prisma.ecommerceStore.findMany({
+      where: { organizationId, name: ci(q) },
+      select: { id: true, name: true, platform: true },
       take: 8,
     }),
   ]);
@@ -137,6 +153,40 @@ export async function globalSearch(
         title: i.number ?? `Invoice ${i.id.slice(0, 8)}`,
         subtitle: i.status,
         href: `/billing`,
+      })),
+    });
+
+  if (contacts.length)
+    groups.push({
+      type: "Contacts",
+      hits: contacts.map((c) => ({
+        type: "Contact",
+        id: c.id,
+        title: c.name,
+        subtitle: c.title ?? undefined,
+        href: `/contacts`,
+      })),
+    });
+  if (campaigns.length)
+    groups.push({
+      type: "Campaigns",
+      hits: campaigns.map((c) => ({
+        type: "Campaign",
+        id: c.id,
+        title: c.name,
+        subtitle: c.channel,
+        href: `/campaigns`,
+      })),
+    });
+  if (stores.length)
+    groups.push({
+      type: "Ecommerce",
+      hits: stores.map((s) => ({
+        type: "Store",
+        id: s.id,
+        title: s.name,
+        subtitle: s.platform,
+        href: `/ecommerce/${s.id}`,
       })),
     });
 

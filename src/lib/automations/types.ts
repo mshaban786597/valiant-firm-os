@@ -8,6 +8,8 @@ import { LeadStatus } from "@prisma/client";
 export const TRIGGERS = [
   { value: "lead_created", label: "Lead created" },
   { value: "lead_scored", label: "Lead scored" },
+  { value: "contact_created", label: "Contact created" },
+  { value: "campaign_created", label: "Campaign created" },
   { value: "deal_won", label: "Deal won" },
   { value: "client_at_risk", label: "Client marked at-risk" },
   { value: "report_due", label: "Report due" },

@@ -139,6 +139,12 @@ model Organization {
   emailCampaigns     EmailCampaign[]
   portalTokens       ClientPortalToken[]
   workflows          Workflow[]
+  contacts           Contact[]
+  campaigns          Campaign[]
+  ecommerceStores    EcommerceStore[]
+  ecommerceProducts  EcommerceProduct[]
+  ecommerceOrders    EcommerceOrder[]
+  ecommerceMetrics   EcommerceMetric[]
 }
 
 model Role {
@@ -372,6 +378,9 @@ model Client {
   gscProperties      GscProperty[]
   googleAdsCampaigns GoogleAdsCampaign[]
   portalTokens       ClientPortalToken[]
+  contacts           Contact[]
+  campaigns          Campaign[]
+  ecommerceStores    EcommerceStore[]
   founderAlerts   FounderAlert[]
 
   @@index([organizationId])
@@ -895,4 +904,176 @@ model ClientPortalToken {
 
   @@index([organizationId])
   @@index([clientId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 — CRM core (Contacts + Campaigns)
+// ---------------------------------------------------------------------------
+
+enum CampaignChannel {
+  GOOGLE_ADS
+  META
+  SEO
+  GBP
+  EMAIL
+  SMM
+  ECOMMERCE
+  OTHER
+}
+
+model Contact {
+  id              String    @id @default(uuid())
+  organizationId  String
+  clientId        String?
+  name            String
+  email           String?
+  phone           String?
+  title           String?
+  role            String?
+  source          String?
+  tags            String[]  @default([])
+  ownerId         String?
+  notes           String?   @db.Text
+  lastContactedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id])
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([email])
+}
+
+model Campaign {
+  id             String          @id @default(uuid())
+  organizationId String
+  clientId       String
+  channel        CampaignChannel
+  name           String
+  status         String          @default("active") // active | paused | completed | draft
+  budgetCents    Int             @default(0)
+  goals          String?         @db.Text
+  managerId      String?
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([channel])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Ecommerce module (Amazon / eBay / Etsy / Shopify / WooCommerce / …)
+// ---------------------------------------------------------------------------
+
+enum EcommercePlatform {
+  AMAZON
+  EBAY
+  ETSY
+  SHOPIFY
+  WOOCOMMERCE
+  WALMART
+  BIGCOMMERCE
+  SQUARESPACE
+  OTHER
+}
+
+model EcommerceStore {
+  id             String            @id @default(uuid())
+  organizationId String
+  clientId       String?
+  platform       EcommercePlatform
+  name           String
+  storeUrl       String?
+  externalId     String?
+  status         String            @default("connected") // connected | disconnected | setup_required
+  currency       String            @default("USD")
+  lastSyncAt     DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?            @relation(fields: [clientId], references: [id])
+  products     EcommerceProduct[]
+  orders       EcommerceOrder[]
+  metrics      EcommerceMetric[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([platform])
+}
+
+model EcommerceProduct {
+  id             String   @id @default(uuid())
+  organizationId String
+  storeId        String
+  externalId     String?
+  title          String
+  sku            String?
+  priceCents     Int      @default(0)
+  currency       String   @default("USD")
+  inventory      Int      @default(0)
+  status         String   @default("active") // active | out_of_stock | archived
+  url            String?
+  imageUrl       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  store        EcommerceStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([storeId])
+  @@index([sku])
+}
+
+model EcommerceOrder {
+  id             String   @id @default(uuid())
+  organizationId String
+  storeId        String
+  externalId     String?
+  status         String   @default("paid") // paid | pending | shipped | refunded | cancelled
+  totalCents     Int      @default(0)
+  currency       String   @default("USD")
+  itemCount      Int      @default(1)
+  customerName   String?
+  placedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  store        EcommerceStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([storeId])
+  @@index([placedAt])
+  @@index([status])
+}
+
+model EcommerceMetric {
+  id             String   @id @default(uuid())
+  organizationId String
+  storeId        String
+  date           DateTime
+  revenueCents   Int      @default(0)
+  orders         Int      @default(0)
+  units          Int      @default(0)
+  sessions       Int      @default(0)
+  conversionRate Float    @default(0)
+  createdAt      DateTime @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  store        EcommerceStore @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([organizationId])
+  @@index([storeId])
+  @@index([date])
 }
