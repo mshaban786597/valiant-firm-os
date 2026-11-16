@@ -26,6 +26,19 @@ Both pass against the real DB with labeled `[PILOT]` data (removable via `npm ru
 - **Sales & Outreach:** lead → score → outreach/reply/booking → Deal Won → 1 client + 26 onboarding items → **replay = 1 client** (idempotent).
 - **Client Operations:** monitor → simulated lead-route failure → incident opened + task → repeat failure → **occurrenceCount 2 (one incident)** → recovery → **RESOLVED**.
 
+## Automation system (diagram build, 2026-11-16, commits e606146 / bcbb211)
+
+| Diagram box | Status | Evidence |
+|---|---|---|
+| Website Monitoring (9 checks) | **Live-verified** | `npm run site:add -- <url>` against the live DB: 9 checks created, 8 measured, real results. Uptime, DNS, TLS, indexing, content change, broken links, security headers, mobile, page speed. |
+| Page speed / Core Web Vitals | **Blocked (free key)** | Keyless PageSpeed quota returns HTTP 429; recorded as "not measured", never as a failure. Needs `PAGESPEED_API_KEY`. |
+| Every 10–15 minutes | **Blocked (2 secrets)** | `.github/workflows/monitor-cron.yml` runs every 15 min but skips until `CRON_SECRET` is set in Vercel and `APP_URL` + `CRON_SECRET` are set as GitHub secrets. |
+| Notifications (email / Slack / Telegram) | **Fixture-verified** | `src/lib/notifications/dispatch.ts`; fires on incident open/resolve, new lead, approval request. No channel is configured, so every alert is logged as not delivered. |
+| Tool Integration Layer | **Fixture-verified** | `/integrations`: 32 tools, status derived from env, live connection tests for 12. Only the site monitor returns live data; Google/ecommerce modules still use sample data; SEO/content/ads tools have a credential slot + test only. |
+| Human Review | **Fixture-verified** | `/approvals`: outreach drafts + change requests, decide-once (compare-and-set). Approved outreach is sent only if `RESEND_API_KEY` is set. |
+| Two workspaces (G06) | **Done** | Nav grouped: Command / Client Operations / Sales & Outreach / System. |
+| Named agents (OpenClaw, Hermes, Atomic) | **Not built** | No such agents run in the app. |
+
 ## Cross-cutting
 
 - **Multi-tenant isolation:** every operational row carries `organizationId`; every read via `requireApiOrg`, every write via `requirePermission`. Tested (`tests/api-security.test.ts`).
