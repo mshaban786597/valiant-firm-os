@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AddWebsiteButton, RunAllButton } from "@/components/automation/site-actions";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
 import { channelStatus } from "@/lib/notifications/dispatch";
+import { AGENTS, DISPATCH_OWNER, agentStatus } from "@/lib/agents/registry";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
@@ -160,6 +161,40 @@ export default async function AutomationSystemPage() {
             </table>
           </div>
         )}
+      </section>
+
+      {/* Agents */}
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Agents</h2>
+          <span className="text-xs text-muted">Dispatch owner: {DISPATCH_OWNER}</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {AGENTS.map((a) => {
+            const st = agentStatus(a);
+            return (
+              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold">{a.name}</div>
+                    <div className="text-xs text-muted">{a.role}</div>
+                  </div>
+                  <StatusBadge
+                    label={st.runtimeConnected ? "Runtime connected" : "Runtime not connected"}
+                    variant={st.runtimeConnected ? "success" : "neutral"}
+                  />
+                </div>
+                <dl className="mt-3 space-y-1 text-xs text-muted">
+                  <div><dt className="inline font-semibold">Served by: </dt><dd className="inline">{st.servedBy}</dd></div>
+                  <div><dt className="inline font-semibold">Input: </dt><dd className="inline">{a.input}</dd></div>
+                  <div><dt className="inline font-semibold">Output: </dt><dd className="inline">{a.output}</dd></div>
+                  <div><dt className="inline font-semibold">Evidence: </dt><dd className="inline">{a.evidence}</dd></div>
+                  <div><dt className="inline font-semibold">Budget: </dt><dd className="inline">{a.budget}</dd></div>
+                </dl>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* System status */}

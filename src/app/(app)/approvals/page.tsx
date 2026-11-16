@@ -45,6 +45,9 @@ export default async function ApprovalsPage() {
     outcome: a.outcome,
     createdAt: a.createdAt.toISOString(),
     decidedAt: a.decidedAt ? a.decidedAt.toISOString() : null,
+    expiresAt: a.expiresAt ? a.expiresAt.toISOString() : null,
+    executionStatus: a.executionStatus,
+    verificationStatus: a.verificationStatus,
   });
 
   return (

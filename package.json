@@ -22,7 +22,8 @@
     "db:seed:demo": "tsx prisma/seed-demo.ts",
     "postinstall": "prisma generate",
     "check:site": "tsx scripts/check-site.ts",
-    "site:add": "tsx scripts/add-site.ts"
+    "site:add": "tsx scripts/add-site.ts",
+    "release:verify": "tsx scripts/release-verify.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

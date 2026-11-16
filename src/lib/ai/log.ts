@@ -11,6 +11,10 @@ export async function logAiEvent(input: {
   relatedRecord?: string | null;
   payloadIn?: unknown;
   payloadOut?: unknown;
+  runId?: string;
+  model?: string;
+  durationMs?: number;
+  errorDetail?: string;
 }) {
   await prisma.aiLog.create({
     data: {
@@ -24,6 +28,10 @@ export async function logAiEvent(input: {
       relatedRecord: input.relatedRecord ?? undefined,
       payloadIn: input.payloadIn ?? undefined,
       payloadOut: input.payloadOut ?? undefined,
+      runId: input.runId,
+      model: input.model,
+      durationMs: input.durationMs,
+      errorDetail: input.errorDetail,
     },
   });
 }

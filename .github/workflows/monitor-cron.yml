@@ -24,3 +24,6 @@ jobs:
           curl -sS --fail-with-body --max-time 90 \
             -H "x-cron-secret: $CRON_SECRET" \
             "$APP_URL/api/cron/run-monitors"
+          curl -sS --fail-with-body --max-time 90 \
+            -H "x-cron-secret: $CRON_SECRET" \
+            "$APP_URL/api/cron/process-outreach"

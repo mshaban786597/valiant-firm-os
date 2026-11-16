@@ -4,37 +4,53 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { approvalDecisionSchema } from "@/lib/schemas/approvals";
+import { processDueSends, providerFor, recipientAllowed, startSequence } from "@/lib/outreach/engine";
 
 export const runtime = "nodejs";
 
-/** Send an approved outreach email via Resend, if configured. Returns the truthful outcome. */
-async function sendApprovedEmail(payload: {
-  to?: string;
-  subject?: string;
-  body?: string;
+/**
+ * Start the approved outreach sequence and send the first email now.
+ * Returns the truthful outcome: sent (with provider reference), canceled by a
+ * pre-send recheck, or scheduled-but-not-sent when no sender is configured.
+ */
+async function startApprovedOutreach(approval: {
+  id: string;
+  organizationId: string;
+  entityId: string | null;
+  isDemo: boolean;
+  payload: unknown;
 }): Promise<string> {
+  const payload = (approval.payload ?? {}) as { to?: string; subject?: string; body?: string };
   if (!payload.to) return "Approved — not sent: the lead has no email address";
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return "Approved — not sent: no email provider configured (set RESEND_API_KEY)";
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify({
-        from:
-          process.env.OUTREACH_EMAIL_FROM ||
-          process.env.ALERT_EMAIL_FROM ||
-          "Valiant Firm <onboarding@resend.dev>",
-        to: [payload.to],
-        subject: payload.subject ?? "",
-        text: payload.body ?? "",
-      }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    return res.ok ? `Email sent to ${payload.to}` : `Approved — send failed (HTTP ${res.status})`;
-  } catch {
-    return "Approved — send failed (network error)";
+  if (!approval.entityId) return "Approved — not sent: no lead is linked to this draft";
+
+  await startSequence({
+    organizationId: approval.organizationId,
+    leadId: approval.entityId,
+    toEmail: payload.to,
+    subject: payload.subject ?? "",
+    body: payload.body ?? "",
+    approvalId: approval.id,
+    isDemo: approval.isDemo,
+  });
+  if (!providerFor(approval.isDemo)) {
+    return "Approved — scheduled, not sent: real outreach sending is switched off";
   }
+  if (!approval.isDemo && !recipientAllowed(payload.to)) {
+    return "Approved — scheduled, not sent: this address is not on the allowed-recipient list";
+  }
+  await processDueSends({ organizationId: approval.organizationId, isDemo: approval.isDemo });
+  const first = await prisma.outreachSend.findFirst({
+    where: { leadId: approval.entityId, step: 0 },
+    select: { status: true, provider: true, providerMessageId: true, cancelReason: true },
+  });
+  if (!first) return "Approved — nothing was scheduled";
+  if (first.status === "sent") {
+    return `Email accepted by ${first.provider} (ref ${first.providerMessageId ?? "none"}) for ${payload.to}; 2 follow-ups scheduled`;
+  }
+  if (first.status === "canceled") return `Approved — not sent: ${first.cancelReason}`;
+  if (first.status === "needs_reconcile") return "Approved — send result unclear; it will be reconciled before any retry";
+  return `Approved — send ${first.status}${first.cancelReason ? ` (${first.cancelReason})` : ""}`;
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -65,26 +81,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const approval = await prisma.approvalRequest.findUniqueOrThrow({ where: { id: params.id } });
   let outcome: string;
-  if (parsed.data.decision === "APPROVED" && approval.kind === "outreach_email") {
-    outcome = await sendApprovedEmail(
-      (approval.payload ?? {}) as { to?: string; subject?: string; body?: string },
-    );
-    if (outcome.startsWith("Email sent") && approval.entityType === "Lead" && approval.entityId) {
-      await prisma.lead
-        .updateMany({
-          where: {
-            id: approval.entityId,
-            organizationId: org.organizationId,
-            sequenceStartedAt: null,
-          },
-          data: { sequenceStartedAt: new Date() },
-        })
-        .catch(() => {});
-    }
-  } else if (parsed.data.decision === "APPROVED") {
-    outcome = "Approved";
-  } else {
+  if (parsed.data.decision === "REJECTED") {
     outcome = "Rejected — nothing was sent or changed";
+  } else if (approval.kind === "outreach_email") {
+    outcome = await startApprovedOutreach(approval);
+  } else if (approval.kind === "fix") {
+    outcome = "Approved — ready to execute";
+  } else {
+    outcome = "Approved";
   }
   await prisma.approvalRequest.update({ where: { id: approval.id }, data: { outcome } });
 

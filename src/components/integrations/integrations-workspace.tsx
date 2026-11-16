@@ -16,6 +16,10 @@ export type IntegrationRow = {
   connected: boolean;
   missing: string[];
   data: "live" | "sample" | "planned";
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestDetail: string | null;
+  lastLiveVerifiedAt: string | null;
 };
 
 export type NotificationRow = {
@@ -25,13 +29,14 @@ export type NotificationRow = {
   title: string;
   status: string;
   error: string | null;
+  providerRef: string | null;
   createdAt: string;
 };
 
 function dataBadge(row: IntegrationRow) {
-  if (row.data === "live") return { label: "Live data", variant: "success" as const };
+  if (row.data === "live") return { label: "Supports live data", variant: "info" as const };
   if (row.data === "sample") return { label: "Sample data", variant: "warning" as const };
-  return { label: "Connection only", variant: "neutral" as const };
+  return { label: "Connection test only", variant: "neutral" as const };
 }
 
 export function IntegrationsWorkspace({
@@ -66,6 +71,7 @@ export function IntegrationsWorkspace({
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
       const data = (await res.json()) as { ok: boolean; detail: string };
       setResults((p) => ({ ...p, [id]: data }));
+      router.refresh();
     } finally {
       setBusy(null);
     }
@@ -111,6 +117,9 @@ export function IntegrationsWorkspace({
                     <p className="mt-1 text-xs text-muted">{r.powers}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge label={badge.label} variant={badge.variant} />
+                      {r.lastLiveVerifiedAt ? (
+                        <StatusBadge label={`Live verified ${new Date(r.lastLiveVerifiedAt).toLocaleDateString()}`} variant="success" />
+                      ) : null}
                       {canTest ? (
                         <button
                           type="button"
@@ -125,6 +134,12 @@ export function IntegrationsWorkspace({
                     {!r.connected && r.missing.length ? (
                       <p className="mt-2 break-words text-[11px] text-muted">
                         To connect, set: <span className="font-mono">{r.missing.join(", ")}</span>
+                      </p>
+                    ) : null}
+                    {!result && r.lastTestAt ? (
+                      <p className="mt-2 text-[11px] text-muted">
+                        Last test {new Date(r.lastTestAt).toLocaleString()}: {r.lastTestOk ? "passed" : "failed"}
+                        {r.lastTestDetail ? ` (${r.lastTestDetail})` : ""}
                       </p>
                     ) : null}
                     {result ? (
@@ -178,10 +193,11 @@ export function IntegrationsWorkspace({
                     <td className="px-4 py-3 capitalize text-muted">{n.channel}</td>
                     <td className="px-4 py-3">
                       <StatusBadge
-                        label={n.status === "skipped" ? "Not delivered" : n.status === "sent" ? "Sent" : "Failed"}
+                        label={n.status === "skipped" ? "Not attempted" : n.status === "sent" ? "Accepted by provider" : "Failed"}
                         variant={n.status === "sent" ? "success" : n.status === "failed" ? "danger" : "neutral"}
                       />
                       {n.error ? <span className="ml-2 text-xs text-muted">{n.error}</span> : null}
+                      {n.providerRef ? <span className="ml-2 text-xs text-muted">ref {n.providerRef}</span> : null}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
                       {new Date(n.createdAt).toLocaleString()}
