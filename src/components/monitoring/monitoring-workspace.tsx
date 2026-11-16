@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast-provider";
 import { useCan } from "@/components/providers/permissions-provider";
 import { errorMessageFromResponse } from "@/lib/api-error";
+import { AddWebsiteButton, RunAllButton } from "@/components/automation/site-actions";
 
 export type MonitorRow = {
   id: string;
@@ -33,7 +34,10 @@ export type IncidentRow = {
 
 type ClientOption = { id: string; businessName: string };
 
-const MONITOR_TYPES = ["UPTIME", "ROUTE", "DNS", "TLS", "LEAD_ROUTE", "CUSTOM"] as const;
+const MONITOR_TYPES = [
+  "UPTIME", "ROUTE", "DNS", "TLS", "PAGE_SPEED", "BROKEN_LINKS", "SECURITY",
+  "INDEXING", "CONTENT_CHANGE", "MOBILE", "LEAD_ROUTE", "CUSTOM",
+] as const;
 
 function statusVariant(s: string | null) {
   if (s === "ok") return "success" as const;
@@ -161,13 +165,17 @@ export function MonitoringWorkspace({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Monitors</h2>
           {canWrite ? (
-            <button type="button" onClick={() => setOpen(true)} className="rounded-lg bg-valiant px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_40px_rgba(211,4,4,0.25)]">
-              Add monitor
-            </button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <RunAllButton label="Run all checks" />
+              <button type="button" onClick={() => setOpen(true)} className="rounded-lg border border-card-border px-3 py-2 text-xs font-semibold">
+                Add single check
+              </button>
+              <AddWebsiteButton clients={clients} />
+            </div>
           ) : null}
         </div>
         {monitors.length === 0 ? (
-          <EmptyState title="No monitors yet" description="Add an uptime, route, DNS, TLS, or lead-route monitor to watch a site." />
+          <EmptyState title="No checks yet" description="Add a website to start uptime, speed, security, indexing, broken link and content checks." />
         ) : (
           <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
             <table className="w-full border-collapse text-sm">
@@ -189,7 +197,7 @@ export function MonitoringWorkspace({
                     </td>
                     <td className="px-4 py-3 text-muted">{m.type}</td>
                     <td className="px-4 py-3 text-muted">{m.clientName ?? "—"}</td>
-                    <td className="px-4 py-3"><StatusBadge label={m.lastStatus ?? "unknown"} variant={statusVariant(m.lastStatus)} /></td>
+                    <td className="px-4 py-3"><StatusBadge label={m.lastStatus === "ok" ? "Passing" : m.lastStatus === "fail" ? "Failing" : m.lastStatus === "unknown" ? "Not measured" : "Not checked yet"} variant={statusVariant(m.lastStatus)} /></td>
                     {canWrite ? (
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-2">

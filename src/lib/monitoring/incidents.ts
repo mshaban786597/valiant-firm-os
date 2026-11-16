@@ -1,10 +1,12 @@
-import { IncidentSeverity, IncidentStatus, type Monitor } from "@prisma/client";
+import { IncidentSeverity, IncidentStatus, Prisma, type Monitor } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { buildFingerprint, defaultSeverity } from "@/lib/monitoring/fingerprint";
+import { notify } from "@/lib/notifications/dispatch";
 
 export interface CheckResult {
-  status: "ok" | "fail";
+  /** "unknown" = the probe itself could not measure (never opens/resolves incidents). */
+  status: "ok" | "fail" | "unknown";
   statusCode?: number | null;
   latencyMs?: number | null;
   detail?: string | null;
@@ -12,6 +14,8 @@ export interface CheckResult {
   affectedObject?: string;
   /** Check kind, for fingerprinting (e.g. "uptime", "lead_route"). */
   checkKind?: string;
+  /** Check-specific memory persisted on the monitor (e.g. content hash). */
+  state?: Record<string, unknown>;
 }
 
 export interface RecordResult {
@@ -52,8 +56,16 @@ export async function recordCheckResult(
 
   await prisma.monitor.update({
     where: { id: monitor.id },
-    data: { lastCheckAt: new Date(), lastStatus: result.status },
+    data: {
+      lastCheckAt: new Date(),
+      lastStatus: result.status,
+      ...(result.state ? { state: result.state as Prisma.InputJsonValue } : {}),
+    },
   });
+
+  if (result.status === "unknown") {
+    return { checkId: check.id, incidentId: null, action: "none" };
+  }
 
   const fingerprint = buildFingerprint(
     monitor.id,
@@ -151,6 +163,16 @@ export async function recordCheckResult(
       meta: { monitorId: monitor.id, severity },
     });
 
+    await notify({
+      organizationId: monitor.organizationId,
+      event: "incident_opened",
+      title: `${monitor.name} — ${result.detail ?? "check failed"}`,
+      body: `Site: ${monitor.target}
+Severity: ${severity}`,
+      severity: severity === IncidentSeverity.CRITICAL ? "critical" : severity === IncidentSeverity.WARNING ? "warning" : "info",
+      path: "/monitoring",
+    }).catch(() => []);
+
     return { checkId: check.id, incidentId: incident.id, action: "incident_opened" };
   }
 
@@ -177,6 +199,14 @@ export async function recordCheckResult(
       entity: "Incident",
       entityId: open.id,
     });
+    await notify({
+      organizationId: monitor.organizationId,
+      event: "incident_resolved",
+      title: `${monitor.name} recovered`,
+      body: `Site: ${monitor.target}
+${result.detail ?? ""}`,
+      path: "/monitoring",
+    }).catch(() => []);
     return { checkId: check.id, incidentId: open.id, action: "incident_resolved" };
   }
 

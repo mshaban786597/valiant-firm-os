@@ -20,7 +20,8 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:seed:demo": "tsx prisma/seed-demo.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "check:site": "tsx scripts/check-site.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

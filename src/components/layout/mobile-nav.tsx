@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, isActivePath } from "@/components/layout/nav-items";
+import { NAV_GROUPS, isActivePath } from "@/components/layout/nav-items";
 
 export function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -58,26 +58,35 @@ export function MobileNav() {
             onClick={() => setOpen(false)}
           />
           <nav className="fixed inset-x-0 top-14 bottom-0 z-50 overflow-y-auto border-t border-card-border bg-card p-3">
-            <div className="grid grid-cols-2 gap-2">
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-                const active = isActivePath(pathname, href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg border px-3 py-3 text-sm font-medium transition-colors",
-                      active
-                        ? "border-valiant/40 bg-valiant-soft text-foreground"
-                        : "border-card-border bg-background text-muted",
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0 opacity-90" />
-                    <span className="truncate">{label}</span>
-                  </Link>
-                );
-              })}
+            <div className="space-y-4">
+              {NAV_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <div className="px-1 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
+                    {group.title}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {group.items.map(({ href, label, icon: Icon }) => {
+                      const active = isActivePath(pathname, href);
+                      return (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setOpen(false)}
+                          className={cn(
+                            "flex items-center gap-2 rounded-lg border px-3 py-3 text-sm font-medium transition-colors",
+                            active
+                              ? "border-valiant/40 bg-valiant-soft text-foreground"
+                              : "border-card-border bg-background text-muted",
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                          <span className="truncate">{label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </nav>
         </>

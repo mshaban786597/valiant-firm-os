@@ -40,6 +40,7 @@ const p = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: p }));
 vi.mock("@/lib/audit", () => ({ writeAuditLog: vi.fn() }));
+vi.mock("@/lib/notifications/dispatch", () => ({ notify: vi.fn().mockResolvedValue([]) }));
 
 import { recordCheckResult } from "@/lib/monitoring/incidents";
 

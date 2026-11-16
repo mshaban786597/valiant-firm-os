@@ -146,6 +146,8 @@ model Organization {
   ecommerceOrders    EcommerceOrder[]
   ecommerceMetrics   EcommerceMetric[]
   monitors           Monitor[]
+  notificationLogs   NotificationLog[]
+  approvalRequests   ApprovalRequest[]
   monitorChecks      MonitorCheck[]
   incidents          Incident[]
 }
@@ -1097,6 +1099,12 @@ enum MonitorType {
   TLS
   LEAD_ROUTE
   CUSTOM
+  PAGE_SPEED
+  BROKEN_LINKS
+  SECURITY
+  INDEXING
+  CONTENT_CHANGE
+  MOBILE
 }
 
 enum IncidentSeverity {
@@ -1122,6 +1130,7 @@ model Monitor {
   enabled        Boolean     @default(true)
   lastCheckAt    DateTime?
   lastStatus     String? // ok | fail | unknown
+  state          Json? // check-specific memory (e.g. last content hash)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -1190,4 +1199,52 @@ model IncidentEvent {
   incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
 
   @@index([incidentId, createdAt])
+}
+
+// Outbound notification attempts (email / Slack / Telegram). Truthful log:
+// "skipped" = channel not configured, never reported as sent.
+model NotificationLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  channel        String // email | slack | telegram
+  event          String // incident_opened | incident_resolved | new_lead | approval_requested | test
+  title          String
+  status         String // sent | skipped | failed
+  error          String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Human-review queue: nothing customer-facing ships without an approval.
+model ApprovalRequest {
+  id             String         @id @default(uuid())
+  organizationId String
+  kind           String // outreach_email | fix | content | ads_change | custom
+  title          String
+  body           String         @db.Text
+  payload        Json?
+  status         ApprovalStatus @default(PENDING)
+  entityType     String?
+  entityId       String?
+  requestedBy    String?
+  decidedBy      String?
+  decisionNote   String?
+  decidedAt      DateTime?
+  outcome        String? // what happened after approval
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
 }

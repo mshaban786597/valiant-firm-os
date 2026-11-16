@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { runTrigger } from "@/lib/automations/engine";
+import { notify } from "@/lib/notifications/dispatch";
 
 const leadCreateSchema = z.object({
   businessName: z.string(),
@@ -107,6 +108,14 @@ export async function POST(req: Request) {
     leadId: lead.id,
     payload: { businessName: lead.businessName, niche: lead.niche },
   }).catch(() => {});
+
+  await notify({
+    organizationId: org.organizationId,
+    event: "new_lead",
+    title: lead.businessName,
+    body: [lead.niche, [lead.city, lead.state].filter(Boolean).join(", "), lead.source].filter(Boolean).join(" · "),
+    path: "/leads",
+  }).catch(() => []);
 
   return NextResponse.json({ lead });
 }

@@ -22,9 +22,14 @@ export function defaultSeverity(type: MonitorType): IncidentSeverity {
     case MonitorType.UPTIME:
     case MonitorType.LEAD_ROUTE:
     case MonitorType.DNS:
+    case MonitorType.INDEXING:
       return IncidentSeverity.CRITICAL;
     case MonitorType.TLS:
     case MonitorType.ROUTE:
+    case MonitorType.PAGE_SPEED:
+    case MonitorType.BROKEN_LINKS:
+    case MonitorType.SECURITY:
+    case MonitorType.MOBILE:
       return IncidentSeverity.WARNING;
     default:
       return IncidentSeverity.INFO;

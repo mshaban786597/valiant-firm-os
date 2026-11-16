@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { telemetry } from "@/lib/telemetry";
 import { isMonitorDue } from "@/lib/monitoring/fingerprint";
-import { runMonitorCheck } from "@/lib/monitoring/runner";
-import { recordCheckResult } from "@/lib/monitoring/incidents";
+import { runMonitorsBatch } from "@/lib/monitoring/run-batch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,7 +11,8 @@ export const maxDuration = 60;
 /**
  * Runs every enabled monitor that is due (by its cadence), records results, and
  * drives the incident lifecycle. CRON_SECRET-gated (header `x-cron-secret` or
- * `Authorization: Bearer`). Schedule externally, e.g. every 5 minutes.
+ * `Authorization: Bearer`). Scheduled every 15 minutes by
+ * .github/workflows/monitor-cron.yml.
  */
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -28,30 +28,23 @@ export async function GET(req: Request) {
   }
 
   const monitors = await prisma.monitor.findMany({
-    where: { enabled: true },
+    where: { enabled: true, type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } },
+    orderBy: { lastCheckAt: { sort: "asc", nulls: "first" } },
     take: 500,
   });
 
   const now = new Date();
-  const due = monitors.filter((m) => isMonitorDue(m.lastCheckAt, m.cadenceMinutes, now));
-
-  let opened = 0;
-  let resolved = 0;
-  for (const monitor of due) {
-    try {
-      const result = await runMonitorCheck(monitor);
-      const outcome = await recordCheckResult(monitor, result);
-      if (outcome.action === "incident_opened") opened++;
-      if (outcome.action === "incident_resolved") resolved++;
-    } catch {
-      // keep going; one monitor failing never blocks the rest
-    }
-  }
+  // Cap per invocation so the run always finishes inside the function limit;
+  // anything left over is still due and runs on the next tick.
+  const due = monitors
+    .filter((m) => isMonitorDue(m.lastCheckAt, m.cadenceMinutes, now))
+    .slice(0, 80);
+  const summary = await runMonitorsBatch(due, 8);
 
   await telemetry.info({
     source: "cron.run-monitors",
-    message: `Ran ${due.length} due monitors (${opened} opened, ${resolved} resolved)`,
+    message: `Ran ${summary.checked} due monitors (${summary.opened} opened, ${summary.resolved} resolved)`,
   });
 
-  return NextResponse.json({ ok: true, checked: due.length, opened, resolved });
+  return NextResponse.json({ success: true, ...summary });
 }

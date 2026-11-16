@@ -50,6 +50,10 @@ export const ACTIONS = [
   "monitor.write",
   "incident.read",
   "incident.write",
+  // human review queue
+  "approval.read",
+  "approval.request",
+  "approval.decide",
   // ecommerce
   "ecommerce.read",
   "ecommerce.write",
@@ -90,6 +94,7 @@ const READ_ONLY: Action[] = [
   "ecommerce.read",
   "monitor.read",
   "incident.read",
+  "approval.read",
   "report.read",
   "invoice.read",
   "integration.read",
@@ -113,6 +118,8 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "ecommerce.write",
     "monitor.write",
     "incident.write",
+    "approval.request",
+    "approval.decide",
     "report.write",
     "report.send",
     "invoice.write",
@@ -131,6 +138,7 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "ecommerce.write",
     "monitor.write",
     "incident.write",
+    "approval.request",
     "report.write",
     "report.send",
     "integration.write",
@@ -138,7 +146,7 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "automation.write",
   ],
   // Sales: leads + pipeline + contacts, read the rest.
-  SALES: [...READ_ONLY, "lead.write", "deal.write", "contact.write"],
+  SALES: [...READ_ONLY, "lead.write", "deal.write", "contact.write", "approval.request"],
   // Finance: billing + invoices, read the rest.
   FINANCE: [...READ_ONLY, "invoice.write"],
   // Delivery: task execution + reporting + incident response.
