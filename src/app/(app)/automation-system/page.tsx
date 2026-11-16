@@ -8,6 +8,7 @@ import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
 import { channelStatus } from "@/lib/notifications/dispatch";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -17,27 +18,28 @@ export const dynamic = "force-dynamic";
  */
 export default async function AutomationSystemPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const open = { in: [IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED] };
 
   const [monitors, checks24h, openIncidents, incidents24h, resolved24h, openTasks, pendingApprovals, reports, alertsSent, clients] =
     await Promise.all([
       prisma.monitor.findMany({
-        where: { organizationId },
+        where: { organizationId, isDemo },
         select: { id: true, name: true, target: true, type: true, lastStatus: true, lastCheckAt: true, enabled: true },
         orderBy: { createdAt: "asc" },
         take: 500,
       }),
-      prisma.monitorCheck.count({ where: { organizationId, observedAt: { gte: since } } }),
-      prisma.incident.count({ where: { organizationId, status: open } }),
-      prisma.incident.count({ where: { organizationId, firstSeenAt: { gte: since } } }),
-      prisma.incident.count({ where: { organizationId, resolvedAt: { gte: since } } }),
-      prisma.task.count({ where: { organizationId, serviceType: "Monitoring", status: { not: "Completed" } } }),
-      prisma.approvalRequest.count({ where: { organizationId, status: ApprovalStatus.PENDING } }),
-      prisma.report.count({ where: { organizationId } }).catch(() => 0),
-      prisma.notificationLog.count({ where: { organizationId, status: "sent", createdAt: { gte: since } } }),
+      prisma.monitorCheck.count({ where: { organizationId, observedAt: { gte: since }, monitor: { isDemo } } }),
+      prisma.incident.count({ where: { organizationId, isDemo, status: open } }),
+      prisma.incident.count({ where: { organizationId, isDemo, firstSeenAt: { gte: since } } }),
+      prisma.incident.count({ where: { organizationId, isDemo, resolvedAt: { gte: since } } }),
+      prisma.task.count({ where: { organizationId, isDemo, serviceType: "Monitoring", status: { not: "Completed" } } }),
+      prisma.approvalRequest.count({ where: { organizationId, isDemo, status: ApprovalStatus.PENDING } }),
+      prisma.report.count({ where: { organizationId, isDemo } }).catch(() => 0),
+      prisma.notificationLog.count({ where: { organizationId, isDemo, status: "sent", createdAt: { gte: since } } }),
       prisma.client.findMany({
-        where: { organizationId },
+        where: { organizationId, isDemo },
         select: { id: true, businessName: true },
         orderBy: { businessName: "asc" },
       }),

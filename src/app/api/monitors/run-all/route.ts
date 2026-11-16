@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { runMonitorsBatch } from "@/lib/monitoring/run-batch";
+import { getDataScope } from "@/lib/scope";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -15,6 +16,7 @@ export async function POST() {
   const monitors = await prisma.monitor.findMany({
     where: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       enabled: true,
       type: { notIn: ["LEAD_ROUTE", "CUSTOM"] },
     },
@@ -22,7 +24,7 @@ export async function POST() {
     take: 60,
   });
 
-  const summary = await runMonitorsBatch(monitors, 8);
+  const summary = await runMonitorsBatch(monitors, 8, "operator");
 
   await writeAuditLog({
     organizationId: org.organizationId,

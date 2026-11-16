@@ -5,19 +5,21 @@ import {
 } from "@/components/reports/reports-workspace";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export default async function ReportsPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const [reports, clients] = await Promise.all([
     prisma.report.findMany({
-      where: { organizationId },
+      where: { organizationId, isDemo },
       include: { client: { select: { businessName: true } } },
       orderBy: { month: "desc" },
       take: 200,
     }),
     prisma.client.findMany({
-      where: { organizationId },
+      where: { organizationId, isDemo },
       select: { id: true, businessName: true },
       orderBy: { businessName: "asc" },
       take: 300,

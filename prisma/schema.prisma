@@ -132,24 +132,31 @@ model Organization {
   founderAlerts   FounderAlert[]
   auditLogs       AuditLog[]
 
-  invoiceLineItems   InvoiceLineItem[]
-  gbpLocations       GbpLocation[]
-  gscProperties      GscProperty[]
-  googleAdsCampaigns GoogleAdsCampaign[]
-  emailCampaigns     EmailCampaign[]
-  portalTokens       ClientPortalToken[]
-  workflows          Workflow[]
-  contacts           Contact[]
-  campaigns          Campaign[]
-  ecommerceStores    EcommerceStore[]
-  ecommerceProducts  EcommerceProduct[]
-  ecommerceOrders    EcommerceOrder[]
-  ecommerceMetrics   EcommerceMetric[]
-  monitors           Monitor[]
-  notificationLogs   NotificationLog[]
-  approvalRequests   ApprovalRequest[]
-  monitorChecks      MonitorCheck[]
-  incidents          Incident[]
+  invoiceLineItems         InvoiceLineItem[]
+  gbpLocations             GbpLocation[]
+  gscProperties            GscProperty[]
+  googleAdsCampaigns       GoogleAdsCampaign[]
+  emailCampaigns           EmailCampaign[]
+  portalTokens             ClientPortalToken[]
+  workflows                Workflow[]
+  contacts                 Contact[]
+  campaigns                Campaign[]
+  ecommerceStores          EcommerceStore[]
+  ecommerceProducts        EcommerceProduct[]
+  ecommerceOrders          EcommerceOrder[]
+  ecommerceMetrics         EcommerceMetric[]
+  monitors                 Monitor[]
+  notificationLogs         NotificationLog[]
+  approvalRequests         ApprovalRequest[]
+  monitorChecks            MonitorCheck[]
+  incidents                Incident[]
+  leadEvidence             LeadEvidence[]
+  outreachSends            OutreachSend[]
+  suppressions             Suppression[]
+  outreachReplies          OutreachReply[]
+  meetings                 Meeting[]
+  integrationVerifications IntegrationVerification[]
+  releaseVerifications     ReleaseVerification[]
 }
 
 model Role {
@@ -162,14 +169,14 @@ model Role {
 }
 
 model User {
-  id             String    @id @default(uuid())
-  name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
-  image          String?
-  passwordHash   String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   accounts    Account[]
   sessions    Session[]
@@ -231,38 +238,43 @@ model VerificationToken {
 }
 
 model Lead {
-  id               String     @id @default(uuid())
-  organizationId   String
-  businessName     String
-  niche            String
-  city             String
-  state            String
-  websiteUrl       String?
-  phone            String?
-  email            String?
-  source           String?
-  domainAuthority  Int?
-  reviewCount      Int?
-  starRating       Float?
-  gbpStatus        String?
-  websiteStatus    String?
-  weaknessTags     String[]   @default([])
-  leadScore        Int?
-  scoreVersion     Int        @default(0)
-  assignedToId     String?
-  status           LeadStatus @default(Raw)
-  recommendedOffer String?
-  outreachAngle    String?
-  outreachQueuedAt DateTime?
+  id                String     @id @default(uuid())
+  organizationId    String
+  businessName      String
+  niche             String
+  city              String
+  state             String
+  websiteUrl        String?
+  phone             String?
+  email             String?
+  source            String?
+  domainAuthority   Int?
+  reviewCount       Int?
+  starRating        Float?
+  gbpStatus         String?
+  websiteStatus     String?
+  weaknessTags      String[]   @default([])
+  leadScore         Int?
+  scoreVersion      Int        @default(0)
+  assignedToId      String?
+  status            LeadStatus @default(Raw)
+  recommendedOffer  String?
+  outreachAngle     String?
+  outreachQueuedAt  DateTime?
   sequenceStartedAt DateTime?
-  sequenceDay      Int?
-  manualOpened     Boolean    @default(false)
-  manualReplied    Boolean    @default(false)
-  manualBooked     Boolean    @default(false)
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  sequenceDay       Int?
+  manualOpened      Boolean    @default(false)
+  manualReplied     Boolean    @default(false)
+  manualBooked      Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isDemo       Boolean           @default(false)
+  evidence     LeadEvidence[]
+  sends        OutreachSend[]
+  replies      OutreachReply[]
+  meetings     Meeting[]
+  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   scores       LeadScore[]
   outreach     OutreachMessage[]
   deals        Deal[]
@@ -278,22 +290,22 @@ model Lead {
 }
 
 model LeadScore {
-  id                   String   @id @default(uuid())
-  organizationId       String
-  leadId               String
-  compositeScore       Int
-  seoWeaknessScore     Int
-  gbpScore             Int
-  reviewVelocityScore  Int
-  websiteQualityScore  Int
-  businessSignalScore  Int
-  weaknessTags         String[] @default([])
-  recommendedOffer     String?
-  firstEmailHook       String?
-  outreachAngle        String?
-  priorityStatus       String
-  reasoningSummary     String?
-  createdAt            DateTime @default(now())
+  id                  String   @id @default(uuid())
+  organizationId      String
+  leadId              String
+  compositeScore      Int
+  seoWeaknessScore    Int
+  gbpScore            Int
+  reviewVelocityScore Int
+  websiteQualityScore Int
+  businessSignalScore Int
+  weaknessTags        String[] @default([])
+  recommendedOffer    String?
+  firstEmailHook      String?
+  outreachAngle       String?
+  priorityStatus      String
+  reasoningSummary    String?
+  createdAt           DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
@@ -322,24 +334,25 @@ model OutreachMessage {
 }
 
 model Deal {
-  id               String     @id @default(uuid())
+  id               String    @id @default(uuid())
   organizationId   String
   leadId           String?
   businessName     String
   contactName      String?
   serviceInterest  String?
-  proposalValue    Decimal?   @db.Decimal(12, 2)
-  monthlyValue     Decimal?   @db.Decimal(12, 2)
-  stage            DealStage  @default(Outreach)
+  proposalValue    Decimal?  @db.Decimal(12, 2)
+  monthlyValue     Decimal?  @db.Decimal(12, 2)
+  stage            DealStage @default(Outreach)
   closeProbability Int?
   callDate         DateTime?
-  notes            String?    @db.Text
+  notes            String?   @db.Text
   lostReason       String?
   proposalDraft    Json?
-  clientId         String?    @unique
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  clientId         String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
+  isDemo       Boolean      @default(false)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead         Lead?        @relation(fields: [leadId], references: [id])
   client       Client?      @relation("DealClient", fields: [clientId], references: [id])
@@ -372,7 +385,9 @@ model Client {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
-  organization    Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isDemo          Boolean               @default(false)
+  meetings        Meeting[]
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   onboardingItems OnboardingItem[]
   tasks           Task[]
   contentItems    ContentItem[]
@@ -388,10 +403,10 @@ model Client {
   contacts           Contact[]
   campaigns          Campaign[]
   ecommerceStores    EcommerceStore[]
-  wonFromDeal        Deal?              @relation("DealClient")
+  wonFromDeal        Deal?               @relation("DealClient")
   monitors           Monitor[]
   incidents          Incident[]
-  founderAlerts   FounderAlert[]
+  founderAlerts      FounderAlert[]
 
   @@index([organizationId])
   @@index([status])
@@ -419,23 +434,24 @@ model OnboardingItem {
 }
 
 model Task {
-  id               String       @id @default(uuid())
-  organizationId   String
-  clientId         String
-  title            String
-  description      String?      @db.Text
-  serviceType      String
-  owner            String?
-  priority         TaskPriority @default(Medium)
-  status           TaskStatus   @default(Backlog)
-  dueDate          DateTime?
-  estimatedHours   Decimal?     @db.Decimal(8, 2)
-  qaStatus         QaStatus     @default(None)
-  sopLink          String?
-  weekLabel        String?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  id             String       @id @default(uuid())
+  organizationId String
+  clientId       String
+  title          String
+  description    String?      @db.Text
+  serviceType    String
+  owner          String?
+  priority       TaskPriority @default(Medium)
+  status         TaskStatus   @default(Backlog)
+  dueDate        DateTime?
+  estimatedHours Decimal?     @db.Decimal(8, 2)
+  qaStatus       QaStatus     @default(None)
+  sopLink        String?
+  weekLabel      String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
+  isDemo       Boolean      @default(false)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -446,25 +462,25 @@ model Task {
 }
 
 model ContentItem {
-  id                 String        @id @default(uuid())
-  organizationId     String
-  clientId           String
-  title              String
-  targetKeyword      String
-  secondaryKeywords  String[]      @default([])
-  location           String?
-  service            String?
-  contentType        String?
-  wordCount          Int?
-  status             ContentStatus @default(Brief)
-  seoScore           Int?
-  publishedUrl       String?
-  publishDate        DateTime?
-  internalLinks      String[]      @default([])
-  schemaType         String?
-  briefDraft         Json?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
+  id                String        @id @default(uuid())
+  organizationId    String
+  clientId          String
+  title             String
+  targetKeyword     String
+  secondaryKeywords String[]      @default([])
+  location          String?
+  service           String?
+  contentType       String?
+  wordCount         Int?
+  status            ContentStatus @default(Brief)
+  seoScore          Int?
+  publishedUrl      String?
+  publishDate       DateTime?
+  internalLinks     String[]      @default([])
+  schemaType        String?
+  briefDraft        Json?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -514,6 +530,13 @@ model Report {
   createdAt        DateTime     @default(now())
   updatedAt        DateTime     @updatedAt
 
+  isDemo       Boolean      @default(false)
+  kind         String       @default("monthly") // monthly | incident
+  version      Int          @default(1)
+  evidence     Json?
+  approvalId   String?
+  incidentId   String?
+  clientFacing Boolean      @default(false)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -524,20 +547,20 @@ model Report {
 }
 
 model HealthScoreSnapshot {
-  id               String   @id @default(uuid())
-  organizationId   String
-  clientId         String
-  compositeScore   Int
-  rankTrendPts     Int?
-  responsePts      Int?
-  paymentPts       Int?
-  engagementPts    Int?
-  npsPts           Int?
-  goalPts          Int?
-  band             String
-  retentionNotes   String?  @db.Text
-  checkInEmail     String?  @db.Text
-  createdAt        DateTime @default(now())
+  id             String   @id @default(uuid())
+  organizationId String
+  clientId       String
+  compositeScore Int
+  rankTrendPts   Int?
+  responsePts    Int?
+  paymentPts     Int?
+  engagementPts  Int?
+  npsPts         Int?
+  goalPts        Int?
+  band           String
+  retentionNotes String?  @db.Text
+  checkInEmail   String?  @db.Text
+  createdAt      DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
@@ -557,6 +580,9 @@ model FounderAlert {
   dismissed      Boolean  @default(false)
   createdAt      DateTime @default(now())
 
+  isDemo       Boolean      @default(false)
+  incidentId   String?
+  resolvedAt   DateTime? // set when the linked incident recovers (alert becomes history)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client?      @relation(fields: [clientId], references: [id])
 
@@ -565,18 +591,18 @@ model FounderAlert {
 }
 
 model AutomationLog {
-  id              String    @id @default(uuid())
-  organizationId  String
-  name            String
-  trigger         String
-  status          String
-  lastRun         DateTime?
-  successCount    Int       @default(0)
-  failureCount    Int       @default(0)
-  errorMessage    String?   @db.Text
-  connectedTools  String[]  @default([])
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  organizationId String
+  name           String
+  trigger        String
+  status         String
+  lastRun        DateTime?
+  successCount   Int       @default(0)
+  failureCount   Int       @default(0)
+  errorMessage   String?   @db.Text
+  connectedTools String[]  @default([])
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -599,6 +625,10 @@ model AiLog {
   payloadOut     Json?
   createdAt      DateTime @default(now())
 
+  runId        String?
+  model        String?
+  durationMs   Int?
+  errorDetail  String?
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId])
@@ -608,22 +638,22 @@ model AiLog {
 }
 
 model RankRentAsset {
-  id               String         @id @default(uuid())
-  organizationId   String
-  niche            String
-  city             String
-  state            String
-  domain           String
-  status           RankRentStatus @default(Research)
-  targetKeywords   String[]       @default([])
-  pagesPublished   Int?
-  organicTraffic   Int?
-  leadsGenerated   Int?
-  renterStatus     String?
-  monthlyRevenue   Decimal?       @db.Decimal(12, 2)
-  rankStatus       String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id             String         @id @default(uuid())
+  organizationId String
+  niche          String
+  city           String
+  state          String
+  domain         String
+  status         RankRentStatus @default(Research)
+  targetKeywords String[]       @default([])
+  pagesPublished Int?
+  organicTraffic Int?
+  leadsGenerated Int?
+  renterStatus   String?
+  monthlyRevenue Decimal?       @db.Decimal(12, 2)
+  rankStatus     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
@@ -778,9 +808,20 @@ model GscProperty {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client?      @relation(fields: [clientId], references: [id])
-  keywords     GscKeyword[]
+  propertyType   String? // domain | url_prefix
+  searchType     String       @default("web")
+  dataSource     String       @default("none") // none | sample | live
+  syncState      String       @default("never") // never | ok | error | needs_reauth | quota | forbidden
+  lastAttemptAt  DateTime?
+  lastError      String?
+  dataThrough    DateTime?
+  periodStart    DateTime?
+  periodEnd      DateTime?
+  disconnectedAt DateTime?
+  metrics        GscMetric[]
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client         Client?      @relation(fields: [clientId], references: [id])
+  keywords       GscKeyword[]
 
   @@unique([organizationId, siteUrl])
   @@index([organizationId])
@@ -1134,10 +1175,16 @@ model Monitor {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  client       Client?        @relation(fields: [clientId], references: [id])
-  checks       MonitorCheck[]
-  incidents    Incident[]
+  isDemo              Boolean        @default(false)
+  environment         String         @default("production") // production | staging | fixture
+  confirmAfter        Int            @default(1) // consecutive failures needed to open an incident
+  consecutiveFailures Int            @default(0)
+  maintenanceUntil    DateTime?
+  owner               String?
+  organization        Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client              Client?        @relation(fields: [clientId], references: [id])
+  checks              MonitorCheck[]
+  incidents           Incident[]
 
   @@index([organizationId])
   @@index([clientId])
@@ -1154,6 +1201,7 @@ model MonitorCheck {
   detail         String?
   observedAt     DateTime @default(now())
 
+  trigger      String       @default("scheduled") // scheduled | manual | retry | simulated
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   monitor      Monitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
 
@@ -1179,6 +1227,8 @@ model Incident {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
+  isDemo       Boolean         @default(false)
+  environment  String          @default("production")
   organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   monitor      Monitor?        @relation(fields: [monitorId], references: [id])
   client       Client?         @relation(fields: [clientId], references: [id])
@@ -1213,6 +1263,8 @@ model NotificationLog {
   error          String?
   createdAt      DateTime @default(now())
 
+  isDemo       Boolean      @default(false)
+  providerRef  String? // provider message id, when the provider returns one
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, createdAt])
@@ -1243,8 +1295,188 @@ model ApprovalRequest {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  isDemo             Boolean      @default(false)
+  incidentId         String?
+  expiresAt          DateTime?
+  executionStatus    String       @default("not_started") // not_started | executed | failed | rolled_back
+  executedAt         DateTime?
+  verificationStatus String       @default("pending") // pending | passed | failed
+  verifiedAt         DateTime?
+  rolledBackAt       DateTime?
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+}
+
+// ---- Production-readiness (78 → production) --------------------------------
+
+// Observed GSC metrics per property, dimension and period. Unique per period so
+// a replayed sync upserts instead of duplicating.
+model GscMetric {
+  id          String   @id @default(uuid())
+  propertyId  String
+  dimension   String // query | page | total
+  key         String
+  clicks      Int      @default(0)
+  impressions Int      @default(0)
+  position    Float?
+  periodStart DateTime
+  periodEnd   DateTime
+  searchType  String   @default("web")
+  source      String   @default("gsc_api") // gsc_api | fixture
+  syncedAt    DateTime @default(now())
+
+  property GscProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, dimension, key, periodStart, periodEnd, searchType])
+  @@index([propertyId, dimension])
+}
+
+// Evidence behind a prospect: what was observed, where, when and by which source.
+model LeadEvidence {
+  id             String   @id @default(uuid())
+  organizationId String
+  leadId         String
+  kind           String // rank_observation | website_finding | service_verification | contact_source
+  provider       String // e.g. "fixture", "site_check", "manual"
+  surface        String? // organic | maps | site
+  query          String?
+  location       String?
+  depth          Int?
+  position       Int?
+  url            String?
+  finding        String   @db.Text
+  isFixture      Boolean  @default(false)
+  observedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([leadId])
+}
+
+// One planned or completed outreach email (step 0 = first email, 1+ = follow-ups).
+model OutreachSend {
+  id                String    @id @default(uuid())
+  organizationId    String
+  leadId            String
+  step              Int       @default(0)
+  status            String    @default("scheduled") // scheduled | sent | canceled | failed | needs_reconcile
+  scheduledFor      DateTime
+  sentAt            DateTime?
+  provider          String? // test | resend
+  providerMessageId String?
+  threadId          String?
+  toEmail           String
+  subject           String
+  body              String    @db.Text
+  cancelReason      String?
+  approvalId        String?
+  idempotencyKey    String    @unique
+  isDemo            Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, scheduledFor])
+  @@index([leadId])
+}
+
+// Addresses that must never be emailed (opt-out, bounce, manual).
+model Suppression {
+  id             String   @id @default(uuid())
+  organizationId String
+  email          String
+  reason         String // unsubscribe | bounce | not_interested | manual
+  source         String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+}
+
+model OutreachReply {
+  id             String   @id @default(uuid())
+  organizationId String
+  leadId         String
+  threadId       String?
+  label          String // interested | question | later | not_interested | wrong_contact | out_of_office | unsubscribe | bounce | needs_review
+  needsReview    Boolean  @default(false)
+  body           String   @db.Text
+  receivedAt     DateTime @default(now())
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([leadId])
+}
+
+// A meeting exists only once the calendar source confirms it. Keyed by the
+// calendar's own event id so cancels / reschedules update the same row.
+model Meeting {
+  id              String   @id @default(uuid())
+  organizationId  String
+  leadId          String?
+  clientId        String?
+  calendarSource  String // test_calendar | google_calendar | calendly
+  externalEventId String
+  status          String   @default("confirmed") // confirmed | rescheduled | canceled | attended | no_show
+  startsAt        DateTime
+  summary         String?  @db.Text
+  isDemo          Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  lead         Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, calendarSource, externalEventId])
+  @@index([organizationId, startsAt])
+}
+
+// Last connection test / live verification per integration.
+model IntegrationVerification {
+  id                 String    @id @default(uuid())
+  organizationId     String
+  integrationId      String
+  lastTestAt         DateTime?
+  lastTestOk         Boolean?
+  lastTestDetail     String?
+  lastLiveVerifiedAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, integrationId])
+}
+
+// Baseline-vs-candidate release check (expected / checked / failed / skipped).
+model ReleaseVerification {
+  id             String   @id @default(uuid())
+  organizationId String
+  site           String
+  baselineUrl    String
+  candidateUrl   String
+  expected       Int
+  checked        Int
+  failed         Int
+  skipped        Int
+  results        Json
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([organizationId, createdAt])
 }

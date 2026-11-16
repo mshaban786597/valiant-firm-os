@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-org";
 import { requirePermission } from "@/lib/api-permission";
@@ -46,6 +47,7 @@ export async function POST(req: Request) {
   const monitor = await prisma.monitor.create({
     data: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       clientId: d.clientId ?? null,
       name: d.name,
       type: d.type,

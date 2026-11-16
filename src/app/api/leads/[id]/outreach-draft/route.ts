@@ -20,6 +20,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     data: {
       organizationId: org.organizationId,
       kind: "outreach_email",
+      isDemo: lead.isDemo,
       title: `Outreach email → ${lead.businessName}`,
       body: `To: ${lead.email ?? "(no email on lead)"}\nSubject: ${draft.subject}\n\n${draft.body}`,
       payload: { to: lead.email ?? undefined, subject: draft.subject, body: draft.body },
@@ -42,6 +43,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     event: "approval_requested",
     title: approval.title,
     path: "/approvals",
+    isDemo: lead.isDemo,
   }).catch(() => []);
 
   return NextResponse.json({ approval });

@@ -138,7 +138,7 @@ export function RunAllButton({ label = "Run full cycle" }: { label?: string }) {
       const res = await fetch("/api/monitors/run-all", { method: "POST", credentials: "include" });
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
       const { summary } = (await res.json()) as {
-        summary: { checked: number; ok: number; failed: number; unknown: number; opened: number; resolved: number };
+        summary: { checked: number; ok: number; failed: number; unknown: number; opened: number; resolved: number; retries: number };
       };
       if (summary.checked === 0) {
         toast.success("No automated checks to run yet. Add a website first.");
@@ -146,7 +146,8 @@ export function RunAllButton({ label = "Run full cycle" }: { label?: string }) {
         toast.success(
           `${summary.checked} checks run: ${summary.ok} passed, ${summary.failed} failed` +
             (summary.unknown ? `, ${summary.unknown} could not be measured` : "") +
-            `. ${summary.opened} new issue(s), ${summary.resolved} resolved.`,
+            `. ${summary.opened} new incident(s), ${summary.resolved} resolved.` +
+            (summary.retries ? ` ${summary.retries} were re-runs inside their check window.` : ""),
         );
       }
       router.refresh();

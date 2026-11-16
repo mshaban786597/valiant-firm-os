@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { WEBSITE_SUITE, normalizeSiteUrl } from "@/lib/monitoring/analyzers";
+import { getDataScope } from "@/lib/scope";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,8 @@ const schema = z.object({
   url: z.string().min(3).max(500),
   label: z.string().max(80).optional(),
   clientId: z.string().uuid().nullable().optional(),
+  environment: z.enum(["production", "staging"]).default("production"),
+  owner: z.string().max(120).optional(),
 });
 
 /** Add a website: creates the full monitor suite (skips types that already exist). */
@@ -49,6 +52,10 @@ export async function POST(req: Request) {
       type: s.type as MonitorType,
       target: url,
       cadenceMinutes: s.cadenceMinutes,
+      confirmAfter: s.confirmAfter,
+      environment: parsed.data.environment,
+      owner: parsed.data.owner ?? null,
+      isDemo: getDataScope().isDemo,
     })),
   });
 
