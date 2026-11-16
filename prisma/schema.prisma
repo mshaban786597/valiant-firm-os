@@ -331,11 +331,13 @@ model Deal {
   notes            String?    @db.Text
   lostReason       String?
   proposalDraft    Json?
+  clientId         String?    @unique
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead         Lead?        @relation(fields: [leadId], references: [id])
+  client       Client?      @relation("DealClient", fields: [clientId], references: [id])
 
   @@index([organizationId])
   @@index([stage])
@@ -381,6 +383,7 @@ model Client {
   contacts           Contact[]
   campaigns          Campaign[]
   ecommerceStores    EcommerceStore[]
+  wonFromDeal        Deal?              @relation("DealClient")
   founderAlerts   FounderAlert[]
 
   @@index([organizationId])

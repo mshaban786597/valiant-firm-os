@@ -1,14 +1,9 @@
-import {
-  ClientStatus,
-  DealStage,
-  LeadStatus,
-  Prisma,
-} from "@prisma/client";
+import { DealStage, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
-import { ensureOnboardingChecklist } from "@/lib/onboarding";
+import { completeDealWonHandoff } from "@/lib/deal-handoff";
 import { writeAuditLog } from "@/lib/audit";
 import { runTrigger } from "@/lib/automations/engine";
 
@@ -87,45 +82,40 @@ export async function PATCH(
     },
   });
 
-  const closedNow =
-    parsed.data.stage === DealStage.ClosedWon &&
-    existing.stage !== DealStage.ClosedWon;
-
-  if (closedNow) {
-    const client = await prisma.client.create({
-      data: {
-        organizationId: org.organizationId,
+  // Deal Won → client/onboarding handoff. Concurrency-safe + idempotent:
+  // only the first writer to close this deal creates exactly one client +
+  // onboarding set (see completeDealWonHandoff).
+  if (parsed.data.stage === DealStage.ClosedWon) {
+    const handoff = await completeDealWonHandoff({
+      organizationId: org.organizationId,
+      deal: {
+        id: existing.id,
         businessName: existing.businessName,
-        primaryContact: existing.contactName,
-        email: existing.lead?.email,
-        phone: existing.lead?.phone,
-        websiteUrl: existing.lead?.websiteUrl,
-        servicePurchased: existing.serviceInterest ?? "Local SEO",
-        monthlyValue: existing.monthlyValue ?? undefined,
-        contractStart: new Date(),
-        status: ClientStatus.Onboarding,
-        targetLocations: [],
-        targetServices: [],
+        contactName: existing.contactName,
+        serviceInterest: existing.serviceInterest,
+        monthlyValue: existing.monthlyValue,
+        leadId: existing.leadId,
+        clientId: existing.clientId,
       },
+      lead: existing.lead
+        ? {
+            email: existing.lead.email,
+            phone: existing.lead.phone,
+            websiteUrl: existing.lead.websiteUrl,
+          }
+        : null,
     });
 
-    await ensureOnboardingChecklist(org.organizationId, client.id);
-
-    if (existing.leadId) {
-      await prisma.lead.update({
-        where: { id: existing.leadId },
-        data: { status: LeadStatus.ClosedWon },
-      });
+    // Fire onboarding automations only when a client was actually created.
+    if (handoff.created && handoff.clientId) {
+      await runTrigger("deal_won", {
+        organizationId: org.organizationId,
+        userId: org.userId,
+        dealId: deal.id,
+        clientId: handoff.clientId,
+        payload: { businessName: existing.businessName },
+      }).catch(() => {});
     }
-
-    // Fire onboarding automations for the freshly-won client (best-effort).
-    await runTrigger("deal_won", {
-      organizationId: org.organizationId,
-      userId: org.userId,
-      dealId: deal.id,
-      clientId: client.id,
-      payload: { businessName: existing.businessName },
-    }).catch(() => {});
   }
 
   await writeAuditLog({
