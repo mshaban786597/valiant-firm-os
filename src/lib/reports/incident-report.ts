@@ -74,9 +74,13 @@ export async function buildIncidentReport(input: {
   const outstanding: string[] = [];
   if (!resolved) outstanding.push("Incident is still open");
   if (task && task.status !== "Completed") outstanding.push(`Task "${task.title}" is ${task.status}, not closed`);
-  const approved = changes.filter((c) => c.status === ApprovalStatus.APPROVED);
+  // Only changes that were approved AND actually applied belong in the report.
+  // An approval that expired unused changed nothing.
+  const approved = changes
+    .filter((c) => c.status === ApprovalStatus.APPROVED && c.executionStatus !== "not_started")
+    .sort((a, b) => (a.executedAt?.getTime() ?? 0) - (b.executedAt?.getTime() ?? 0));
   if (approved.some((c) => c.verificationStatus !== "passed")) {
-    outstanding.push("An approved change has not passed verification");
+    outstanding.push("An applied change has not passed verification");
   }
 
   const evidence: IncidentReportEvidence = {

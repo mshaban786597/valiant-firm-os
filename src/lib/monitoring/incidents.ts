@@ -87,6 +87,7 @@ export async function recordCheckResult(
       latencyMs: result.latencyMs ?? null,
       detail: result.detail ?? null,
       trigger,
+      observedAt,
     },
   });
 
@@ -158,6 +159,8 @@ export async function recordCheckResult(
           title: `${monitor.name}: ${result.detail ?? "check failed"}`,
           severity,
           status: IncidentStatus.OPEN,
+          firstSeenAt: observedAt,
+          lastSeenAt: observedAt,
           isDemo,
           environment,
           evidence: {
