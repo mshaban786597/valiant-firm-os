@@ -17,7 +17,7 @@ No scores. Every row points at a test, a command or a record.
 | `npx tsc --noEmit` | clean |
 | `npx vitest run` | 211 tests, 23 files, all pass |
 | `npm run build` | compiled successfully |
-| `npm run pilots` | see "Pilots" below |
+| `npm run pilots` | 32 of 32 checks passed (demo scope, real database) |
 | `npm run site:add -- https://bigbendgutters.com "Big Bend Gutters" --routes` | 14 live checks created and run |
 | `npm run release:verify -- https://bigbendgutters.com https://www.bigbendgutters.com / /contact/ /services/gutter-repair/` | expected 30 · checked 30 · failed 0 · skipped 0 |
 
@@ -37,7 +37,7 @@ On Git Bash prefix path arguments with `MSYS_NO_PATHCONV=1`, otherwise `/contact
 | Dashboard states | — | Empty, populated and degraded (`settle`) states; links to incidents, tasks, reviews, meetings, provider connections | Live verified (empty), Fixture verified (populated, degraded) | Live dashboard renders with no live records; unit tests |
 | Incident lifecycle | Any failure opened an incident; re-runs added occurrences | Confirmation threshold, retry vs fresh observation, maintenance window, unique open incident per fingerprint (DB index) | Fixture verified | `tests/monitoring.test.ts` (11 cases) + pilot |
 | Run feedback | "Check recorded: none" | Outcome, time and next action | Live verified | "Passed at 19:58 UTC. HTTP 307 in 1422ms. No action needed." / "Could not be measured at 19:58 UTC. PageSpeed API unavailable (HTTP 429)…" |
-| Simulation controls | Available on every check | Only on demo-scope checks (API returns 403 otherwise) | Implemented, verification pending (UI path) | Route guard in `api/monitors/[id]/run` |
+| Simulation controls | Available on every check | Only on demo-scope checks | Live verified | Forced failure on the live "Big Bend Gutters — Uptime" check was refused with HTTP 403 |
 
 Exit evidence, by state: healthy and unmeasured are live (app's own site and bigbendgutters.com); failed and recovered are fixture (pilot lead route), plus one live failing check (see Phase 2).
 
@@ -108,7 +108,7 @@ Status: **Fixture verified**. No real email was sent to anyone.
 | Item | Status | Note |
 |---|---|---|
 | Typecheck, tests, build | Passed | see commands above |
-| Local click-through | Live verified | Signed in on a local server (port 3001): Dashboard (live), Monitoring, run-check feedback |
+| Local click-through | Live verified | Signed in on a local server (port 3001). Live scope: Dashboard, Monitoring, run-check feedback, Integrations, Automation System. Demo scope: Client Health, Review & Approvals, Outreach, Reports. The Live/Demo button itself was not clicked (the browser pane was hidden); the scope was switched by setting the same cookie the button sets. |
 | Worker restart safety | Fixture verified | pilot step 4 |
 | Vercel preview / staging | Blocked | Preview environment has no `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`; the Vercel CLI hangs in this shell, so they could not be set |
 | Backup / restore | Pending | Not exercised. Neon point-in-time restore or a branch is the path; owner: database account holder |

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import {
   DEFAULT_FOLLOW_UP_GAPS,
+  REPLY_LABELS,
   SUPPRESS_LABELS,
   STOP_LABELS,
   classifyReply,
@@ -373,7 +374,7 @@ export async function recordReply(input: {
 
   let canceled = 0;
   if (STOP_LABELS.indexOf(label) !== -1) {
-    canceled = await cancelPending(input.leadId, `Prospect replied (${label})`);
+    canceled = await cancelPending(input.leadId, `Prospect replied (${REPLY_LABELS[label]})`);
   }
 
   let suppressed = false;
