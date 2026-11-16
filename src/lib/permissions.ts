@@ -45,6 +45,11 @@ export const ACTIONS = [
   "contact.write",
   "campaign.read",
   "campaign.write",
+  // monitoring / incidents (client operations)
+  "monitor.read",
+  "monitor.write",
+  "incident.read",
+  "incident.write",
   // ecommerce
   "ecommerce.read",
   "ecommerce.write",
@@ -83,6 +88,8 @@ const READ_ONLY: Action[] = [
   "contact.read",
   "campaign.read",
   "ecommerce.read",
+  "monitor.read",
+  "incident.read",
   "report.read",
   "invoice.read",
   "integration.read",
@@ -104,6 +111,8 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "contact.write",
     "campaign.write",
     "ecommerce.write",
+    "monitor.write",
+    "incident.write",
     "report.write",
     "report.send",
     "invoice.write",
@@ -120,6 +129,8 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "contact.write",
     "campaign.write",
     "ecommerce.write",
+    "monitor.write",
+    "incident.write",
     "report.write",
     "report.send",
     "integration.write",
@@ -130,8 +141,8 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
   SALES: [...READ_ONLY, "lead.write", "deal.write", "contact.write"],
   // Finance: billing + invoices, read the rest.
   FINANCE: [...READ_ONLY, "invoice.write"],
-  // Delivery: task execution + reporting, read the rest.
-  DELIVERY: [...READ_ONLY, "task.write", "report.write"],
+  // Delivery: task execution + reporting + incident response.
+  DELIVERY: [...READ_ONLY, "task.write", "report.write", "monitor.write", "incident.write"],
   // SEO specialist: manages GBP/GSC integrations, tasks, reports, campaigns.
   SEO_SPECIALIST: [...READ_ONLY, "task.write", "report.write", "integration.write", "campaign.write"],
   // Ads specialist: manages Ads integrations, tasks, reports, campaigns.

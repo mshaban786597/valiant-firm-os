@@ -145,6 +145,9 @@ model Organization {
   ecommerceProducts  EcommerceProduct[]
   ecommerceOrders    EcommerceOrder[]
   ecommerceMetrics   EcommerceMetric[]
+  monitors           Monitor[]
+  monitorChecks      MonitorCheck[]
+  incidents          Incident[]
 }
 
 model Role {
@@ -384,6 +387,8 @@ model Client {
   campaigns          Campaign[]
   ecommerceStores    EcommerceStore[]
   wonFromDeal        Deal?              @relation("DealClient")
+  monitors           Monitor[]
+  incidents          Incident[]
   founderAlerts   FounderAlert[]
 
   @@index([organizationId])
@@ -1079,4 +1084,110 @@ model EcommerceMetric {
   @@index([organizationId])
   @@index([storeId])
   @@index([date])
+}
+
+// ---------------------------------------------------------------------------
+// Monitoring & Incident lifecycle (G08 / C02)
+// ---------------------------------------------------------------------------
+
+enum MonitorType {
+  UPTIME
+  ROUTE
+  DNS
+  TLS
+  LEAD_ROUTE
+  CUSTOM
+}
+
+enum IncidentSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model Monitor {
+  id             String      @id @default(uuid())
+  organizationId String
+  clientId       String?
+  name           String
+  type           MonitorType @default(UPTIME)
+  target         String
+  cadenceMinutes Int         @default(15)
+  enabled        Boolean     @default(true)
+  lastCheckAt    DateTime?
+  lastStatus     String? // ok | fail | unknown
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?        @relation(fields: [clientId], references: [id])
+  checks       MonitorCheck[]
+  incidents    Incident[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@index([enabled])
+}
+
+model MonitorCheck {
+  id             String   @id @default(uuid())
+  organizationId String
+  monitorId      String
+  status         String // ok | fail
+  statusCode     Int?
+  latencyMs      Int?
+  detail         String?
+  observedAt     DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  monitor      Monitor      @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([monitorId, observedAt])
+}
+
+model Incident {
+  id              String           @id @default(uuid())
+  organizationId  String
+  monitorId       String?
+  clientId        String?
+  fingerprint     String
+  title           String
+  severity        IncidentSeverity @default(WARNING)
+  status          IncidentStatus   @default(OPEN)
+  occurrenceCount Int              @default(1)
+  taskId          String?
+  evidence        Json?
+  firstSeenAt     DateTime         @default(now())
+  lastSeenAt      DateTime         @default(now())
+  resolvedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  monitor      Monitor?        @relation(fields: [monitorId], references: [id])
+  client       Client?         @relation(fields: [clientId], references: [id])
+  events       IncidentEvent[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, fingerprint])
+  @@index([monitorId])
+}
+
+model IncidentEvent {
+  id         String   @id @default(uuid())
+  incidentId String
+  type       String // opened | occurrence | acknowledged | resolved | note | task_created
+  note       String?
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
 }

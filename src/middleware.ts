@@ -15,6 +15,7 @@ const PROTECTED_PREFIXES = [
   "/delivery",
   "/content",
   "/reports",
+  "/monitoring",
   "/health",
   "/seo",
   "/gbp",
