@@ -27,6 +27,8 @@ import { getDataScope } from "@/lib/scope";
 import { computeDashboardKpis, settle } from "@/lib/dashboard/kpis";
 import { getMonitoringSummary } from "@/lib/monitoring/summary";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
+import { netAfterTools, summarizeExpenses } from "@/lib/expenses";
+import { can } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +46,7 @@ function sourceSegment(source: string | null): "inbound" | "referral" | "outboun
 }
 
 export default async function DashboardPage() {
-  const { organizationId } = await requireSessionOrg();
+  const { organizationId, role } = await requireSessionOrg();
   const scope = getDataScope();
   const isDemo = scope.isDemo;
   const now = new Date();
@@ -106,6 +108,14 @@ export default async function DashboardPage() {
     invoices: invoices ?? [],
     now,
   });
+
+  // Tool costs are finance data: only roles allowed to read expenses see them.
+  const showCosts = can(role, "expense.read");
+  const expenseRows = showCosts
+    ? await settle(prisma.expense.findMany({ where: scoped }))
+    : null;
+  const costs = expenseRows ? summarizeExpenses(expenseRows) : null;
+  const net = costs ? netAfterTools(kpis.contractedMrr, costs) : null;
 
   const openTasks = tasks.filter((t) => t.status !== TaskStatus.Completed).length;
   const connectedTools = INTEGRATIONS.filter((t) => integrationState(t) === "connected").length;
@@ -288,6 +298,26 @@ export default async function DashboardPage() {
           value={invoices === null ? unavailable : formatCurrency(kpis.collected30d)}
           hint="Invoices marked paid."
         />
+        {showCosts ? (
+          <>
+            <KpiCard
+              label="Tool costs / month"
+              value={costs ? formatCurrency(costs.actualMonthlyCents / 100) : unavailable}
+              hint={
+                costs
+                  ? costs.withoutAmount
+                    ? `${costs.withAmount} priced; ${costs.withoutAmount} active tool(s) have no amount yet`
+                    : `${costs.withAmount} active tool(s) priced`
+                  : undefined
+              }
+            />
+            <KpiCard
+              label={net && net.incomplete ? "Net after tools (incomplete)" : "Net after tools / month"}
+              value={net ? formatCurrency(net.netMonthly) : unavailable}
+              hint="Contracted MRR minus entered tool costs."
+            />
+          </>
+        ) : null}
         <KpiCard label="New contracted MRR (30d)" value={formatCurrency(kpis.newMrr30d)} hint="Clients added in the last 30 days." />
         <KpiCard label="Active clients" value={String(kpis.activeClients)} hint={`${kpis.onboardingClients} onboarding`} />
         <KpiCard label="At-risk clients" value={String(kpis.atRiskClients)} />

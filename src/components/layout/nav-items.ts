@@ -18,6 +18,7 @@ import {
   Megaphone,
   Plug,
   Radar,
+  Receipt,
   Rocket,
   Search,
   SearchCode,
@@ -71,6 +72,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/reports", label: "Reports", icon: ActivitySquare },
       { href: "/ecommerce", label: "Ecommerce", icon: ShoppingCart },
       { href: "/billing", label: "Billing", icon: CreditCard },
+      { href: "/expenses", label: "Tool Expenses", icon: Receipt },
     ],
   },
   {

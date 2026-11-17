@@ -25,6 +25,7 @@ const PROTECTED_PREFIXES = [
   "/google-ads",
   "/email-campaigns",
   "/billing",
+  "/expenses",
   "/automations",
   "/ai-logs",
   "/rank-rent",

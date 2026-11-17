@@ -158,6 +158,7 @@ model Organization {
   integrationVerifications IntegrationVerification[]
   releaseVerifications     ReleaseVerification[]
   seoSnapshots             SeoSnapshot[]
+  expenses                 Expense[]
 }
 
 model Role {
@@ -1501,4 +1502,29 @@ model SeoSnapshot {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, domain, kind, observedAt])
+}
+
+// A tool or subscription the agency pays for. amountCents is what is ACTUALLY
+// paid per billing cycle (null = not entered yet). The planned range is a
+// monthly budget estimate and is never added to actual totals.
+model Expense {
+  id               String    @id @default(uuid())
+  organizationId   String
+  name             String
+  vendor           String?
+  category         String
+  billingCycle     String    @default("monthly") // monthly | yearly | one_time
+  amountCents      Int?
+  plannedLowCents  Int?
+  plannedHighCents Int?
+  status           String    @default("active") // active | planned | canceled
+  renewsOn         DateTime?
+  notes            String?
+  isDemo           Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, isDemo, status])
 }
