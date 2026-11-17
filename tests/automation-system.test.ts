@@ -180,6 +180,12 @@ describe("integration catalog", () => {
     expect(integrationState(ahrefs, { AHREFS_API_KEY: "k" })).toBe("connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);
     expect(integrationState(getIntegration("site-monitor")!, {})).toBe("connected");
+    // PageSpeed works with either the service account or its own API key.
+    const psi = getIntegration("pagespeed")!;
+    expect(integrationState(psi, {})).toBe("not_connected");
+    expect(missingEnv(psi, {})).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON or PAGESPEED_API_KEY"]);
+    expect(integrationState(psi, { GOOGLE_SERVICE_ACCOUNT_JSON: "{}" })).toBe("connected");
+    expect(integrationState(psi, { PAGESPEED_API_KEY: "k" })).toBe("connected");
   });
   it("never calls a provider when credentials are missing", async () => {
     const r = await testIntegration(getIntegration("stripe")!, {});

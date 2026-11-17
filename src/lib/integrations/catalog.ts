@@ -35,7 +35,10 @@ export interface ToolIntegration {
   name: string;
   category: IntegrationCategory;
   powers: string;
+  /** All of these must be set. */
   envVars: string[];
+  /** Alternatively, any ONE of these is enough (used when two credentials both work). */
+  envAny?: string[];
   data: "live" | "sample" | "planned";
   /** Builds a cheap, read-only request that proves the credentials work. */
   ping?: (env: Env) => PingRequest;
@@ -57,8 +60,9 @@ export const INTEGRATIONS: ToolIntegration[] = [
     id: "pagespeed",
     name: "PageSpeed Insights",
     category: "Google Tools",
-    powers: "Page speed & Core Web Vitals checks (free Google API key; the keyless shared quota is usually exhausted)",
-    envVars: ["PAGESPEED_API_KEY"],
+    powers: "Page speed & Core Web Vitals checks, using the Google service account or a PageSpeed API key",
+    envVars: [],
+    envAny: ["GOOGLE_SERVICE_ACCOUNT_JSON", "PAGESPEED_API_KEY"],
     data: "live",
   },
   // ---- Google ------------------------------------------------------------
@@ -343,12 +347,18 @@ export const INTEGRATIONS: ToolIntegration[] = [
 
 export type IntegrationState = "connected" | "not_connected";
 
+const isSet = (env: Env, k: string) => !!env[k] && env[k]!.trim() !== "";
+
 export function integrationState(tool: ToolIntegration, env: Env = process.env): IntegrationState {
-  return tool.envVars.every((k) => !!env[k] && env[k]!.trim() !== "") ? "connected" : "not_connected";
+  const all = tool.envVars.every((k) => isSet(env, k));
+  const any = !tool.envAny || tool.envAny.some((k) => isSet(env, k));
+  return all && any ? "connected" : "not_connected";
 }
 
 export function missingEnv(tool: ToolIntegration, env: Env = process.env): string[] {
-  return tool.envVars.filter((k) => !env[k] || env[k]!.trim() === "");
+  const missing = tool.envVars.filter((k) => !isSet(env, k));
+  if (tool.envAny && !tool.envAny.some((k) => isSet(env, k))) missing.push(tool.envAny.join(" or "));
+  return missing;
 }
 
 export function getIntegration(id: string): ToolIntegration | null {

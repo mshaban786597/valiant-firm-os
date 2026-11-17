@@ -12,6 +12,7 @@ import {
 } from "@/lib/monitoring/analyzers";
 import { isAdvancedKind } from "@/lib/monitoring/advanced";
 import { runAdvancedCheck } from "@/lib/monitoring/advanced-runner";
+import { getGoogleAccessToken } from "@/lib/integrations/google-auth";
 
 type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown; kind?: string | null };
 
@@ -216,13 +217,24 @@ export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult
         const api =
           `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}` +
           `&strategy=mobile&category=performance${key ? `&key=${encodeURIComponent(key)}` : ""}`;
+        // No API key: authenticate with the Google service account instead, which
+        // gives the project's own PageSpeed quota. Neither → the shared keyless quota.
+        const headers: Record<string, string> = {};
+        let authed = !!key;
+        if (!key) {
+          const token = await getGoogleAccessToken(["openid"]);
+          if (token.ok) {
+            headers.authorization = `Bearer ${token.token}`;
+            authed = true;
+          }
+        }
         const started = Date.now();
-        const r = await fetch(api, { signal: AbortSignal.timeout(50_000) });
+        const r = await fetch(api, { headers, signal: AbortSignal.timeout(50_000) });
         if (!r.ok) {
           return {
             status: "unknown",
             statusCode: r.status,
-            detail: `PageSpeed API unavailable (HTTP ${r.status})${key ? "" : " — set PAGESPEED_API_KEY for a dedicated quota"}`,
+            detail: `PageSpeed API unavailable (HTTP ${r.status})${authed ? "" : " — connect a Google service account or set PAGESPEED_API_KEY"}`,
             affectedObject: url,
             checkKind,
           };
