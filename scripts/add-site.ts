@@ -8,7 +8,7 @@
  *           on the home page (contact, quote, service pages first).
  */
 import { MonitorType, PrismaClient } from "@prisma/client";
-import { WEBSITE_SUITE, extractLinks, normalizeSiteUrl } from "@/lib/monitoring/analyzers";
+import { WEBSITE_SUITE, extractLinks, normalizeSiteUrl, suiteDbFields } from "@/lib/monitoring/analyzers";
 import { runMonitorsBatch } from "@/lib/monitoring/run-batch";
 import { checkState } from "@/lib/monitoring/state";
 
@@ -46,14 +46,16 @@ async function main() {
 
   const existing = await prisma.monitor.findMany({
     where: { organizationId: org.id, isDemo: false },
-    select: { type: true, target: true },
+    select: { type: true, kind: true, target: true },
   });
-  const have = (type: string, target: string) => existing.some((e) => e.type === type && e.target === target);
+  const have = (type: string, target: string) =>
+    existing.some((e) => (e.kind ?? e.type) === type && e.target === target);
 
   const rows = WEBSITE_SUITE.filter((s) => !have(s.type, url)).map((s) => ({
     organizationId: org.id,
     name: `${label} — ${s.label}`,
-    type: s.type as MonitorType,
+    type: suiteDbFields(s).type as MonitorType,
+    kind: suiteDbFields(s).kind,
     target: url,
     cadenceMinutes: s.cadenceMinutes,
     confirmAfter: s.confirmAfter,
@@ -69,6 +71,7 @@ async function main() {
           organizationId: org.id,
           name: `${label} — Page ${new URL(r).pathname}`,
           type: MonitorType.ROUTE,
+          kind: null,
           target: r,
           cadenceMinutes: 60,
           confirmAfter: 2,
@@ -96,11 +99,13 @@ async function main() {
     UPTIME: "HTTP status below 400", ROUTE: "HTTP status below 400", TLS: "HTTPS answers below 400", DNS: "at least 1 DNS record",
     INDEXING: "indexable, robots.txt not blocking", CONTENT_CHANGE: "content unchanged since last check", BROKEN_LINKS: "no 404/410/5xx links",
     SECURITY: "HTTPS and core security headers", MOBILE: "device-width viewport", PAGE_SPEED: "performance score 50+",
+    SSL_EXPIRY: "certificate valid for more than 14 days", RESPONSE_TIME: "under 3000ms and not 2x slower than usual",
+    SITE_CRAWL: "no broken pages, links or noindex pages", FORM: "lead form present and its handler reachable",
   };
   console.log("\n STATE        CHECK                                            EXPECTED → ACTUAL");
   after.forEach((m) => {
-    const st = checkState(m).toUpperCase().padEnd(11);
-    console.log(` ${st}  ${m.name.slice(0, 46).padEnd(46)}  ${expected[m.type] ?? ""} → ${m.checks[0]?.detail ?? ""}`);
+    const st = checkState({ ...m, type: m.kind ?? m.type }).toUpperCase().padEnd(11);
+    console.log(` ${st}  ${m.name.slice(0, 46).padEnd(46)}  ${expected[m.kind ?? m.type] ?? ""} → ${m.checks[0]?.detail ?? ""}`);
   });
   const open = await prisma.incident.findMany({
     where: { organizationId: org.id, monitorId: { in: monitors.map((m) => m.id) }, status: { in: ["OPEN", "ACKNOWLEDGED"] } },

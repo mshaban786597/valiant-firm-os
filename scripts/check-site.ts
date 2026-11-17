@@ -5,7 +5,7 @@
  *   npm run check:site -- https://example.com
  */
 import { MonitorType } from "@prisma/client";
-import { WEBSITE_SUITE, normalizeSiteUrl } from "@/lib/monitoring/analyzers";
+import { WEBSITE_SUITE, normalizeSiteUrl, suiteDbFields } from "@/lib/monitoring/analyzers";
 import { runMonitorCheck } from "@/lib/monitoring/runner";
 
 async function main() {
@@ -18,7 +18,8 @@ async function main() {
   console.log(`\nLive checks for ${url}\n`);
   const results = await Promise.all(
     WEBSITE_SUITE.map(async (s) => {
-      const r = await runMonitorCheck({ type: s.type as MonitorType, target: url, state: null });
+      const f = suiteDbFields(s);
+      const r = await runMonitorCheck({ type: f.type as MonitorType, kind: f.kind, target: url, state: null });
       return { label: s.label, status: r.status, detail: r.detail ?? "" };
     }),
   );

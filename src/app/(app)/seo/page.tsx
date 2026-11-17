@@ -2,6 +2,7 @@ import { PageShell } from "@/components/layout/page-shell";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { SeoTabs } from "@/components/seo/seo-tabs";
 import { GscWorkspace, type GscRow } from "@/components/seo/gsc-workspace";
+import { VisibilityEstimates, type VisibilitySite } from "@/components/seo/visibility-estimates";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 import { GSC_STATE_COPY, aggregateCtr, type GscSyncState } from "@/lib/integrations/gsc";
@@ -25,6 +26,33 @@ export default async function SeoOverviewPage() {
       orderBy: { businessName: "asc" },
     }),
   ]);
+
+  // Latest third-party snapshot per domain and kind (older ones stay as history).
+  const snapshots = await prisma.seoSnapshot.findMany({
+    where: { organizationId },
+    orderBy: { observedAt: "desc" },
+    take: 300,
+  });
+  const siteMap: Record<string, VisibilitySite> = {};
+  const seenKind: Record<string, true> = {};
+  snapshots.forEach((snap) => {
+    const key = `${snap.domain}|${snap.kind}`;
+    if (seenKind[key]) return;
+    seenKind[key] = true;
+    const site = (siteMap[snap.domain] = siteMap[snap.domain] ?? {
+      domain: snap.domain,
+      provider: snap.provider,
+      location: snap.location,
+      observedAt: snap.observedAt.toISOString(),
+      overview: null,
+      keywords: [],
+    });
+    if (snap.kind === "domain_overview") site.overview = snap.data as VisibilitySite["overview"];
+    if (snap.kind === "keywords") {
+      site.keywords = ((snap.data as { rows?: VisibilitySite["keywords"] }).rows ?? []).slice(0, 50);
+    }
+  });
+  const visibility = Object.keys(siteMap).map((d) => siteMap[d]!);
 
   const rows: GscRow[] = properties.map((p) => ({
     id: p.id,
@@ -73,6 +101,7 @@ export default async function SeoOverviewPage() {
         <KpiCard label="CTR (clicks ÷ impressions)" value={ctr === null ? "No live data" : `${(ctr * 100).toFixed(1)}%`} hint="Aggregate, not an average of rows" />
       </div>
       <GscWorkspace properties={rows} clients={clients} />
+      <VisibilityEstimates sites={visibility} />
     </PageShell>
   );
 }

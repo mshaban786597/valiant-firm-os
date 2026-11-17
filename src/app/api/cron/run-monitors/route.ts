@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
   const monitors = await prisma.monitor.findMany({
     // The scheduler only ever runs live checks; fixtures are driven by hand.
-    where: { enabled: true, isDemo: false, type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } },
+    where: { enabled: true, isDemo: false, OR: [{ type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } }, { kind: { not: null } }] },
     orderBy: { lastCheckAt: { sort: "asc", nulls: "first" } },
     take: 500,
   });

@@ -134,7 +134,7 @@ describe("website suite", () => {
   });
   it("covers every diagram check exactly once", () => {
     const types = WEBSITE_SUITE.map((s) => s.type);
-    expect(types.length).toBe(9);
+    expect(types.length).toBe(13);
     expect(types.filter((t, i) => types.indexOf(t) !== i)).toEqual([]);
     expect(WEBSITE_SUITE.find((s) => s.type === "UPTIME")?.cadenceMinutes).toBe(15);
   });

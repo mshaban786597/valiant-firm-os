@@ -41,7 +41,7 @@ type MonitorLike = Pick<Monitor, "id" | "organizationId" | "clientId" | "name" |
   Partial<
     Pick<
       Monitor,
-      "isDemo" | "environment" | "confirmAfter" | "consecutiveFailures" | "maintenanceUntil" | "owner"
+      "isDemo" | "environment" | "confirmAfter" | "consecutiveFailures" | "maintenanceUntil" | "owner" | "kind"
     >
   >;
 
@@ -106,7 +106,7 @@ export async function recordCheckResult(
 
   const fingerprint = buildFingerprint(
     monitor.id,
-    result.checkKind ?? monitor.type.toLowerCase(),
+    result.checkKind ?? (monitor.kind ?? monitor.type).toLowerCase(),
     result.affectedObject ?? monitor.target,
   );
   const findOpen = () =>
@@ -147,7 +147,7 @@ export async function recordCheckResult(
     }
 
     // New confirmed incident.
-    const severity = defaultSeverity(monitor.type);
+    const severity = defaultSeverity(monitor.kind ?? monitor.type);
     let incident: { id: string };
     try {
       incident = await prisma.incident.create({

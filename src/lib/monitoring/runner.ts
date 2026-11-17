@@ -10,8 +10,10 @@ import {
   isBrokenStatus,
   summarizePageSpeed,
 } from "@/lib/monitoring/analyzers";
+import { isAdvancedKind } from "@/lib/monitoring/advanced";
+import { runAdvancedCheck } from "@/lib/monitoring/advanced-runner";
 
-type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown };
+type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown; kind?: string | null };
 
 const UA = "ValiantFirmMonitor/1.0 (+https://valiant-firm-os.vercel.app)";
 
@@ -37,10 +39,13 @@ async function fetchPage(url: string, timeoutMs = 12_000) {
  * LEAD_ROUTE/CUSTOM runs a real probe against the live site.
  */
 export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult> {
-  const checkKind = monitor.type.toLowerCase();
+  const checkKind = (monitor.kind ?? monitor.type).toLowerCase();
   const url = toUrl(monitor.target);
 
   try {
+    if (isAdvancedKind(monitor.kind)) {
+      return await runAdvancedCheck(monitor.kind, monitor.target, monitor.state);
+    }
     switch (monitor.type) {
       case MonitorType.UPTIME:
       case MonitorType.ROUTE:
@@ -242,6 +247,15 @@ export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult
         };
     }
   } catch (err) {
+    // A crawl that cannot finish is not proof the site is broken.
+    if (monitor.kind === "SITE_CRAWL") {
+      return {
+        status: "unknown",
+        detail: err instanceof Error ? `Crawl did not complete: ${err.name}` : "Crawl error",
+        affectedObject: monitor.target,
+        checkKind,
+      };
+    }
     // A measurement tool timing out is not a site outage.
     if (monitor.type === MonitorType.PAGE_SPEED) {
       return {

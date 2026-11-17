@@ -157,6 +157,7 @@ model Organization {
   meetings                 Meeting[]
   integrationVerifications IntegrationVerification[]
   releaseVerifications     ReleaseVerification[]
+  seoSnapshots             SeoSnapshot[]
 }
 
 model Role {
@@ -1175,6 +1176,9 @@ model Monitor {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
+  // Deeper check kind (SSL_EXPIRY | SITE_CRAWL | RESPONSE_TIME | FORM). Stored as text so
+  // adding kinds never changes the MonitorType enum; such rows use type CUSTOM.
+  kind                String?
   isDemo              Boolean        @default(false)
   environment         String         @default("production") // production | staging | fixture
   confirmAfter        Int            @default(1) // consecutive failures needed to open an incident
@@ -1479,4 +1483,22 @@ model ReleaseVerification {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, createdAt])
+}
+
+// A dated snapshot of third-party SEO data for a domain (estimates, not
+// observed Search Console metrics). Kept as history: each import is a new row.
+model SeoSnapshot {
+  id             String   @id @default(uuid())
+  organizationId String
+  domain         String
+  provider       String // ubersuggest | ahrefs | semrush ...
+  kind           String // domain_overview | keywords | backlinks
+  location       String?
+  data           Json
+  observedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, domain, kind, observedAt])
 }

@@ -42,7 +42,7 @@ export async function getMonitoringSummary(
   const [monitors, uptimeObs, incidents, activeAlerts, historicalAlerts] = await Promise.all([
     prisma.monitor.findMany({
       where: { organizationId, isDemo },
-      select: { enabled: true, type: true, lastStatus: true, lastCheckAt: true, cadenceMinutes: true },
+      select: { enabled: true, type: true, kind: true, lastStatus: true, lastCheckAt: true, cadenceMinutes: true },
     }),
     prisma.monitorCheck.findMany({
       where: {
@@ -88,7 +88,10 @@ export async function getMonitoringSummary(
 
   return {
     scope: { isDemo, label: isDemo ? "Demo data" : "Live data", windowHours },
-    checks: summarizeChecks(monitors, now),
+    checks: summarizeChecks(
+      monitors.map((m) => ({ ...m, type: m.kind ?? m.type })),
+      now,
+    ),
     uptime: computeUptime(uptimeObs, windowHours, now),
     openIncidents,
     activeAlerts,

@@ -18,7 +18,7 @@ export async function POST() {
       organizationId: org.organizationId,
       isDemo: getDataScope().isDemo,
       enabled: true,
-      type: { notIn: ["LEAD_ROUTE", "CUSTOM"] },
+      OR: [{ type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } }, { kind: { not: null } }],
     },
     orderBy: { lastCheckAt: { sort: "asc", nulls: "first" } },
     take: 60,

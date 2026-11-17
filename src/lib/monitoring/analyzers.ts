@@ -180,7 +180,11 @@ export interface SuiteMonitor {
     | "SECURITY"
     | "INDEXING"
     | "CONTENT_CHANGE"
-    | "MOBILE";
+    | "MOBILE"
+    | "SSL_EXPIRY"
+    | "SITE_CRAWL"
+    | "RESPONSE_TIME"
+    | "FORM";
   label: string;
   cadenceMinutes: number;
   /** Consecutive failures needed before an incident opens (2 absorbs a single blip). */
@@ -198,7 +202,21 @@ export const WEBSITE_SUITE: SuiteMonitor[] = [
   { type: "SECURITY", label: "Security headers", cadenceMinutes: 1440, confirmAfter: 1 },
   { type: "MOBILE", label: "Mobile usability", cadenceMinutes: 1440, confirmAfter: 1 },
   { type: "PAGE_SPEED", label: "Page speed & Core Web Vitals", cadenceMinutes: 1440, confirmAfter: 1 },
+  { type: "SSL_EXPIRY", label: "SSL certificate expiry", cadenceMinutes: 1440, confirmAfter: 1 },
+  { type: "RESPONSE_TIME", label: "Response time trend", cadenceMinutes: 30, confirmAfter: 2 },
+  { type: "SITE_CRAWL", label: "Full-site crawl (sitemap)", cadenceMinutes: 1440, confirmAfter: 1 },
+  { type: "FORM", label: "Lead form routing", cadenceMinutes: 360, confirmAfter: 2 },
 ];
+
+const ADVANCED: Record<string, true> = { SSL_EXPIRY: true, SITE_CRAWL: true, RESPONSE_TIME: true, FORM: true };
+
+/**
+ * Database fields for a suite entry. Deeper kinds are stored as type CUSTOM with
+ * the kind in a text column, so new kinds never require an enum change.
+ */
+export function suiteDbFields(s: SuiteMonitor): { type: string; kind: string | null } {
+  return ADVANCED[s.type] ? { type: "CUSTOM", kind: s.type } : { type: s.type, kind: null };
+}
 
 /** Normalize user input ("example.com", "http://x.com/") into an https URL. */
 export function normalizeSiteUrl(input: string): string | null {

@@ -27,7 +27,7 @@ export default async function AutomationSystemPage() {
     await Promise.all([
       prisma.monitor.findMany({
         where: { organizationId, isDemo },
-        select: { id: true, name: true, target: true, type: true, lastStatus: true, lastCheckAt: true, enabled: true },
+        select: { id: true, name: true, target: true, type: true, kind: true, lastStatus: true, lastCheckAt: true, enabled: true },
         orderBy: { createdAt: "asc" },
         take: 500,
       }),
@@ -50,7 +50,7 @@ export default async function AutomationSystemPage() {
   const siteOrder: string[] = [];
   const sites: Record<string, { target: string; total: number; ok: number; fail: number; lastCheckAt: Date | null }> = {};
   monitors.forEach((m) => {
-    if (m.type === "LEAD_ROUTE" || m.type === "CUSTOM") return;
+    if (!m.kind && (m.type === "LEAD_ROUTE" || m.type === "CUSTOM")) return;
     let host = m.target;
     try {
       host = new URL(m.target.startsWith("http") ? m.target : `https://${m.target}`).host;
