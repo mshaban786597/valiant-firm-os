@@ -118,6 +118,15 @@ export async function syncGscProperty(
   // Which page ranks for which query: the basis for "which page to work on".
   const queryPages = await gscQuery({ ...base, dimension: "query_page" });
   if (!queryPages.ok) return fail(queryPages.state, queryPages.detail);
+  // Daily position per query: the basis for rank tracking.
+  const queryDays = await gscQuery({ ...base, dimension: "query_date" });
+  if (!queryDays.ok) return fail(queryDays.state, queryDays.detail);
+  const rankRows = queryDays.data
+    .map((r) => {
+      const i = r.key.indexOf("\t");
+      return { date: r.key.slice(0, i), query: r.key.slice(i + 1), clicks: r.clicks, impressions: r.impressions, position: r.position };
+    })
+    .filter((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.query && r.position !== null);
 
   const periodStart = new Date(`${period.startDate}T00:00:00Z`);
   const periodEnd = new Date(`${period.endDate}T00:00:00Z`);
@@ -148,6 +157,22 @@ export async function syncGscProperty(
           syncedAt: now,
         })),
       ),
+      skipDuplicates: true,
+    }),
+    // Replace the days this sync covers; earlier days stay as history.
+    prisma.gscRankDay.deleteMany({
+      where: { propertyId: property.id, date: { gte: periodStart, lte: periodEnd } },
+    }),
+    prisma.gscRankDay.createMany({
+      data: rankRows.map((r) => ({
+        propertyId: property.id,
+        query: r.query.slice(0, 500),
+        date: new Date(`${r.date}T00:00:00Z`),
+        clicks: r.clicks,
+        impressions: r.impressions,
+        position: r.position as number,
+        syncedAt: now,
+      })),
       skipDuplicates: true,
     }),
     prisma.gscProperty.update({

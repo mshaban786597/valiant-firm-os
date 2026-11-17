@@ -116,7 +116,8 @@ export async function gscQuery(input: {
   startDate: string;
   endDate: string;
   /** "query_page" returns each query with the page that ranked for it (key = "query\tpage"). */
-  dimension: "query" | "page" | "query_page" | null;
+  /** "query_date" returns each query per day (key = "YYYY-MM-DD\tquery"). */
+  dimension: "query" | "page" | "query_page" | "query_date" | null;
   searchType?: string;
   rowLimit?: number;
   maxRows?: number;
@@ -138,7 +139,13 @@ export async function gscQuery(input: {
         startDate: input.startDate,
         endDate: input.endDate,
         dimensions:
-          input.dimension === "query_page" ? ["query", "page"] : input.dimension ? [input.dimension] : [],
+          input.dimension === "query_page"
+            ? ["query", "page"]
+            : input.dimension === "query_date"
+              ? ["date", "query"]
+              : input.dimension
+                ? [input.dimension]
+                : [],
         type: input.searchType ?? "web",
         rowLimit,
         startRow,
@@ -149,7 +156,7 @@ export async function gscQuery(input: {
     page.forEach((row) =>
       rows.push({
         key:
-          input.dimension === "query_page"
+          input.dimension === "query_page" || input.dimension === "query_date"
             ? `${row.keys?.[0] ?? ""}\t${row.keys?.[1] ?? ""}`
             : input.dimension
               ? (row.keys?.[0] ?? "")

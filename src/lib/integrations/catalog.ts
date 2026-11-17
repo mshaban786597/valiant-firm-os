@@ -7,8 +7,8 @@
  *
  * `data` says where that module's numbers come from today:
  *  - "live"     real API calls when connected
- *  - "sample"   module exists but runs on deterministic sample data until its
- *               live sync is wired
+ *  - "sample"   module exists but shows no numbers until its live sync is
+ *               wired (nothing is generated)
  *  - "planned"  credential slot + connection test only; no module yet
  */
 
@@ -68,7 +68,7 @@ export const INTEGRATIONS: ToolIntegration[] = [
     category: "Google Tools",
     powers: "Clicks, impressions, queries, indexing",
     envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON"],
-    data: "sample",
+    data: "live",
   },
   {
     id: "ga4",

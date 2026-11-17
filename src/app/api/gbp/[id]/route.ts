@@ -3,7 +3,6 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gbpUpdateSchema } from "@/lib/schemas/gbp";
-import { sampleGbpInsights } from "@/lib/integrations/sample";
 
 export async function PATCH(
   req: Request,
@@ -26,12 +25,10 @@ export async function PATCH(
 
   const data: Record<string, unknown> = {};
   if (parsed.data.action === "refresh") {
-    // No OAuth configured → deterministic sample refresh.
-    const insights = sampleGbpInsights(`${existing.gbpId}:${Date.now()}`);
-    data.rating = insights.rating;
-    data.reviewCount = insights.reviewCount;
-    data.postsLast30Days = insights.postsLast30Days;
-    data.lastSyncAt = new Date();
+    return NextResponse.json(
+      { error: "Google Business Profile is not connected yet, so there is nothing to sync. No numbers were changed." },
+      { status: 409 },
+    );
   }
   for (const k of ["category", "phone", "website", "address", "clientId"] as const) {
     if (parsed.data[k] !== undefined) data[k] = parsed.data[k];

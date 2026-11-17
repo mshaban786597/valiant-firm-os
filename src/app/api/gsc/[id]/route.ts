@@ -3,7 +3,6 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gscUpdateSchema } from "@/lib/schemas/gsc";
-import { sampleGscInsights } from "@/lib/integrations/sample";
 import { disconnectGscProperty, syncGscProperty, testGscAccess } from "@/lib/integrations/gsc-sync";
 
 export const runtime = "nodejs";
@@ -15,7 +14,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const existing = await prisma.gscProperty.findFirst({
     where: { id: params.id, organizationId: org.organizationId },
-    include: { client: { select: { servicePurchased: true, targetLocations: true } } },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -37,46 +35,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     message = "Disconnected. Historical Search Console data is kept.";
   } else if (action === "refresh") {
     const live = await syncGscProperty(existing);
-    if (live.state === "not_configured") {
-      // No Google credential: refuse to overwrite real data with sample data.
-      if (existing.dataSource === "live") {
-        ok = false;
-        message = "No Google credential is configured, so the last live data was left unchanged.";
-      } else {
-        const niche = existing.client?.servicePurchased ?? "services";
-        const city = existing.client?.targetLocations?.[0] ?? "your area";
-        const insights = sampleGscInsights(existing.siteUrl, niche, city);
-        await prisma.$transaction([
-          prisma.gscKeyword.deleteMany({ where: { propertyId: existing.id } }),
-          prisma.gscKeyword.createMany({
-            data: insights.keywords.map((k) => ({
-              propertyId: existing.id,
-              query: k.query,
-              clicks: k.clicks,
-              impressions: k.impressions,
-              ctr: k.ctr,
-              position: k.position,
-            })),
-          }),
-          prisma.gscProperty.update({
-            where: { id: existing.id },
-            data: {
-              clicks28d: insights.clicks28d,
-              impressions28d: insights.impressions28d,
-              avgPosition: insights.avgPosition,
-              lastSyncAt: new Date(),
-              lastAttemptAt: new Date(),
-              dataSource: "sample",
-            },
-          }),
-        ]);
-        message =
-          "Loaded SAMPLE data (not from Search Console). Set GOOGLE_SERVICE_ACCOUNT_JSON to sync real data.";
-      }
-    } else {
-      ok = live.ok;
-      message = live.message;
-    }
+    // No credential: nothing is loaded and existing data is left untouched.
+    ok = live.ok;
+    message = live.message;
   } else {
     const data: Record<string, unknown> = {};
     if (parsed.data.verified !== undefined) data.verified = parsed.data.verified;

@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { telemetry } from "@/lib/telemetry";
 import { emailCampaignUpdateSchema } from "@/lib/schemas/email-campaign";
-import { sampleEmailEngagement } from "@/lib/integrations/sample";
 
 export async function GET(
   _req: Request,
@@ -42,63 +41,12 @@ export async function PATCH(
   }
 
   if (parsed.data.action === "send") {
-    if (existing.status === "sent") {
-      return NextResponse.json({ error: "Campaign already sent." }, { status: 409 });
-    }
-    const recipientCount = await prisma.emailRecipient.count({
-      where: { campaignId: existing.id },
-    });
-    if (recipientCount === 0) {
-      return NextResponse.json(
-        { error: "Add at least one recipient before sending." },
-        { status: 400 },
-      );
-    }
-
-    // Real dispatch requires an ESP (Resend). Without one, mark as sent and
-    // simulate engagement deterministically (fallback per architecture rules).
-    const dispatched = Boolean(process.env.RESEND_API_KEY);
-    const engagement = sampleEmailEngagement(existing.id, recipientCount);
-    const sentAt = new Date();
-
-    await prisma.$transaction([
-      prisma.emailRecipient.updateMany({
-        where: { campaignId: existing.id },
-        data: { status: "sent", sentAt },
-      }),
-      prisma.emailCampaign.update({
-        where: { id: existing.id },
-        data: {
-          status: "sent",
-          sentAt,
-          recipientCount,
-          opens: engagement.opens,
-          clicks: engagement.clicks,
-          unsubscribes: engagement.unsubscribes,
-        },
-      }),
-    ]);
-
-    await telemetry.info({
-      source: "email.campaign.send",
-      message: dispatched
-        ? `Dispatched campaign to ${recipientCount} recipients`
-        : `Simulated send to ${recipientCount} recipients (no ESP configured)`,
-      organizationId: org.organizationId,
-      userId: org.userId,
-      meta: { campaignId: existing.id, dispatched },
-    });
-
-    await writeAuditLog({
-      organizationId: org.organizationId,
-      userId: org.userId,
-      action: "email_campaign.send",
-      entity: "EmailCampaign",
-      entityId: existing.id,
-      meta: { recipientCount, dispatched },
-    });
-
-    return NextResponse.json({ ok: true, dispatched, recipientCount });
+    // Campaign sending is not wired to an email provider. Refuse rather than
+    // mark it sent or show engagement that never happened.
+    return NextResponse.json(
+      { error: "Email campaign sending is not connected yet. Nothing was sent." },
+      { status: 409 },
+    );
   }
 
   // Field edits are only allowed while still a draft.

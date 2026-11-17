@@ -821,6 +821,7 @@ model GscProperty {
   periodEnd      DateTime?
   disconnectedAt DateTime?
   metrics        GscMetric[]
+  rankDays       GscRankDay[]
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client         Client?      @relation(fields: [clientId], references: [id])
   keywords       GscKeyword[]
@@ -1527,4 +1528,22 @@ model Expense {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, isDemo, status])
+}
+
+// Observed Search Console position for one query on one day. Each sync adds
+// the days it covers, so ranking history accumulates over time.
+model GscRankDay {
+  id          String   @id @default(uuid())
+  propertyId  String
+  query       String
+  date        DateTime @db.Date
+  clicks      Int      @default(0)
+  impressions Int      @default(0)
+  position    Float
+  syncedAt    DateTime @default(now())
+
+  property GscProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, query, date])
+  @@index([propertyId, date])
 }

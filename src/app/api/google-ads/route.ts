@@ -4,7 +4,6 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { adsCreateSchema } from "@/lib/schemas/google-ads";
-import { sampleAdsMetrics } from "@/lib/integrations/sample";
 
 export async function GET() {
   const org = await requireApiOrg();
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const m = sampleAdsMetrics(data.campaignId);
+  // Spend and results stay empty until Google Ads is connected.
   const campaign = await prisma.googleAdsCampaign.create({
     data: {
       organizationId: org.organizationId,
@@ -62,12 +61,6 @@ export async function POST(req: Request) {
       campaignId: data.campaignId,
       campaignName: data.campaignName,
       status: data.status,
-      spend: m.spend,
-      impressions: m.impressions,
-      clicks: m.clicks,
-      conversions: m.conversions,
-      costPerConv: m.costPerConv,
-      lastSyncAt: new Date(),
     },
   });
 

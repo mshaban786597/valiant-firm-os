@@ -36,7 +36,7 @@ export default async function SeoKeywordsPage({
       })
     : [];
 
-  let rows: KeywordRow[] = live.map((k) => ({
+  const rows: KeywordRow[] = live.map((k) => ({
     id: k.id,
     query: k.key,
     site: k.property.siteUrl,
@@ -45,27 +45,6 @@ export default async function SeoKeywordsPage({
     ctr: k.impressions ? (k.clicks / k.impressions) * 100 : 0,
     position: k.position ?? 0,
   }));
-
-  // No live data anywhere: fall back to sample keywords, clearly labeled.
-  let sample = false;
-  if (properties.length === 0) {
-    const keywords = await prisma.gscKeyword.findMany({
-      where: { property: { organizationId } },
-      include: { property: { select: { siteUrl: true } } },
-      orderBy: { clicks: "desc" },
-      take: 500,
-    });
-    sample = keywords.length > 0;
-    rows = keywords.map((k) => ({
-      id: k.id,
-      query: k.query,
-      site: k.property.siteUrl,
-      clicks: k.clicks,
-      impressions: k.impressions,
-      ctr: k.ctr,
-      position: k.position,
-    }));
-  }
 
   const period = scope[0]?.periodStart && scope[0]?.periodEnd
     ? `${scope[0].periodStart.toISOString().slice(0, 10)} to ${scope[0].periodEnd.toISOString().slice(0, 10)}`
@@ -93,11 +72,6 @@ export default async function SeoKeywordsPage({
             {rows.length === 1500 ? " (top 1,500)" : ""}. CTR is clicks divided by impressions for each query.
           </div>
         </>
-      ) : sample ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-          These are <span className="font-semibold">sample keywords</span>, not Search Console data. Connect a
-          property on the Overview tab to see real queries.
-        </div>
       ) : null}
       {rows.length === 0 ? (
         <EmptyState

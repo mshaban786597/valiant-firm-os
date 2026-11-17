@@ -35,7 +35,7 @@ export type NotificationRow = {
 
 function dataBadge(row: IntegrationRow) {
   if (row.data === "live") return { label: "Supports live data", variant: "info" as const };
-  if (row.data === "sample") return { label: "Sample data", variant: "warning" as const };
+  if (row.data === "sample") return { label: "No data until connected", variant: "warning" as const };
   return { label: "Connection test only", variant: "neutral" as const };
 }
 
