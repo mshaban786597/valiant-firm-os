@@ -18,27 +18,30 @@ async function main() {
     const i = a.indexOf("=");
     return { client: a.slice(0, i).trim(), siteUrl: a.slice(i + 1).trim() };
   });
-  if (pairs.length === 0 || pairs.some((p) => !p.client || !p.siteUrl)) {
+  if (pairs.length === 0 || pairs.some((p) => !p.siteUrl)) {
     throw new Error('Usage: gsc-connect "Client name=https://site.com/" ...');
   }
   const org = await prisma.organization.findUniqueOrThrow({ where: { slug: "valiant-firm" }, select: { id: true } });
 
   for (const p of pairs) {
-    console.log(`\n${p.client} → ${p.siteUrl}`);
-    const client = await prisma.client.findFirst({
-      where: { organizationId: org.id, isDemo: false, businessName: p.client },
-      select: { id: true },
-    });
-    if (!client) {
+    console.log(`\n${p.client || "(no client)"} → ${p.siteUrl}`);
+    // An empty client name registers the property without a client (own / internal site).
+    const client = p.client
+      ? await prisma.client.findFirst({
+          where: { organizationId: org.id, isDemo: false, businessName: p.client },
+          select: { id: true },
+        })
+      : null;
+    if (p.client && !client) {
       console.log("  SKIPPED: no live client with that name");
       continue;
     }
     const property = await prisma.gscProperty.upsert({
       where: { organizationId_siteUrl: { organizationId: org.id, siteUrl: p.siteUrl } },
-      create: { organizationId: org.id, siteUrl: p.siteUrl, clientId: client.id, propertyType: propertyTypeOf(p.siteUrl) },
-      update: { clientId: client.id },
+      create: { organizationId: org.id, siteUrl: p.siteUrl, clientId: client?.id ?? null, propertyType: propertyTypeOf(p.siteUrl) },
+      update: client ? { clientId: client.id } : {},
     });
-    await prisma.client.update({ where: { id: client.id }, data: { gscSiteUrl: p.siteUrl } });
+    if (client) await prisma.client.update({ where: { id: client.id }, data: { gscSiteUrl: p.siteUrl } });
 
     const access = await testGscAccess(property);
     console.log(`  Test access: ${access.ok ? "OK" : "FAILED"} — ${access.message}`);

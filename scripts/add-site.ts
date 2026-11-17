@@ -33,7 +33,9 @@ async function discoverRoutes(url: string): Promise<string[]> {
 async function main() {
   const args = process.argv.slice(2);
   const flags = args.filter((a) => a.startsWith("--"));
-  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--owner");
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--owner" && args[i - 1] !== "--client");
+  const clientIdx = args.indexOf("--client");
+  const clientName = clientIdx !== -1 ? (args[clientIdx + 1] ?? null) : null;
   const ownerIdx = args.indexOf("--owner");
   const owner = ownerIdx !== -1 ? (args[ownerIdx + 1] ?? null) : null;
 
@@ -43,6 +45,14 @@ async function main() {
 
   const org = await prisma.organization.findUnique({ where: { slug: "valiant-firm" }, select: { id: true } });
   if (!org) throw new Error("Organization 'valiant-firm' not found — run db:seed first.");
+
+  const client = clientName
+    ? await prisma.client.findFirst({
+        where: { organizationId: org.id, isDemo: false, businessName: clientName },
+        select: { id: true },
+      })
+    : null;
+  if (clientName && !client) throw new Error(`No live client named "${clientName}"`);
 
   const existing = await prisma.monitor.findMany({
     where: { organizationId: org.id, isDemo: false },
@@ -61,6 +71,7 @@ async function main() {
     confirmAfter: s.confirmAfter,
     environment: "production",
     owner,
+    clientId: client?.id ?? null,
   }));
   if (flags.indexOf("--routes") !== -1) {
     const routes = await discoverRoutes(url);
@@ -77,6 +88,7 @@ async function main() {
           confirmAfter: 2,
           environment: "production",
           owner,
+          clientId: client?.id ?? null,
         }),
       );
   }

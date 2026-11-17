@@ -115,7 +115,8 @@ export async function gscQuery(input: {
   siteUrl: string;
   startDate: string;
   endDate: string;
-  dimension: "query" | "page" | null;
+  /** "query_page" returns each query with the page that ranked for it (key = "query\tpage"). */
+  dimension: "query" | "page" | "query_page" | null;
   searchType?: string;
   rowLimit?: number;
   maxRows?: number;
@@ -136,7 +137,8 @@ export async function gscQuery(input: {
       body: JSON.stringify({
         startDate: input.startDate,
         endDate: input.endDate,
-        dimensions: input.dimension ? [input.dimension] : [],
+        dimensions:
+          input.dimension === "query_page" ? ["query", "page"] : input.dimension ? [input.dimension] : [],
         type: input.searchType ?? "web",
         rowLimit,
         startRow,
@@ -146,7 +148,12 @@ export async function gscQuery(input: {
     const page = r.data.rows ?? [];
     page.forEach((row) =>
       rows.push({
-        key: input.dimension ? (row.keys?.[0] ?? "") : "total",
+        key:
+          input.dimension === "query_page"
+            ? `${row.keys?.[0] ?? ""}\t${row.keys?.[1] ?? ""}`
+            : input.dimension
+              ? (row.keys?.[0] ?? "")
+              : "total",
         clicks: Math.round(row.clicks),
         impressions: Math.round(row.impressions),
         position: typeof row.position === "number" ? row.position : null,

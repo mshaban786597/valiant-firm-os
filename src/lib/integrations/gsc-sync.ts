@@ -115,6 +115,9 @@ export async function syncGscProperty(
   if (!queries.ok) return fail(queries.state, queries.detail);
   const pages = await gscQuery({ ...base, dimension: "page" });
   if (!pages.ok) return fail(pages.state, pages.detail);
+  // Which page ranks for which query: the basis for "which page to work on".
+  const queryPages = await gscQuery({ ...base, dimension: "query_page" });
+  if (!queryPages.ok) return fail(queryPages.state, queryPages.detail);
 
   const periodStart = new Date(`${period.startDate}T00:00:00Z`);
   const periodEnd = new Date(`${period.endDate}T00:00:00Z`);
@@ -123,6 +126,7 @@ export async function syncGscProperty(
     { dimension: "total", rows: [total] },
     { dimension: "query", rows: queries.data },
     { dimension: "page", rows: pages.data },
+    { dimension: "query_page", rows: queryPages.data },
   ];
 
   // Replace this exact period atomically: a replay yields the same rows.
