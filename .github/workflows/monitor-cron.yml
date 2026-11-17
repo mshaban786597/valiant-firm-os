@@ -1,18 +1,28 @@
-name: Monitor cron
+name: Automation schedule
 
-# Runs the due website checks every 15 minutes by calling the app's
-# secret-gated cron endpoint. Requires repo secrets APP_URL and CRON_SECRET.
+# Calls the app's secret-gated scheduled endpoints.
+#   every 15 minutes: due website checks, due outreach emails
+#   once a day:       Search Console refresh, prospecting agent
+# Requires repo secrets APP_URL and CRON_SECRET. Scheduled workflows only run
+# from the default branch.
 on:
   schedule:
     - cron: "*/15 * * * *"
+    - cron: "20 11 * * *"
   workflow_dispatch:
+    inputs:
+      daily:
+        description: "Also run the daily jobs (Search Console refresh, prospecting)"
+        type: boolean
+        default: false
 
 jobs:
-  run-monitors:
+  frequent:
+    if: github.event.schedule != '20 11 * * *'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 4
     steps:
-      - name: Run due monitors
+      - name: Website checks and outreach queue
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
@@ -24,6 +34,32 @@ jobs:
           curl -sS --fail-with-body --max-time 90 \
             -H "x-cron-secret: $CRON_SECRET" \
             "$APP_URL/api/cron/run-monitors"
+          echo
           curl -sS --fail-with-body --max-time 90 \
             -H "x-cron-secret: $CRON_SECRET" \
             "$APP_URL/api/cron/process-outreach"
+
+  daily:
+    if: github.event.schedule == '20 11 * * *' || inputs.daily
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Search Console refresh and prospecting
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$APP_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "APP_URL / CRON_SECRET secrets not set; skipping."
+            exit 0
+          fi
+          # Search Console: a few properties per call, so call until all are fresh.
+          for i in 1 2 3 4; do
+            curl -sS --fail-with-body --max-time 90 \
+              -H "x-cron-secret: $CRON_SECRET" \
+              "$APP_URL/api/cron/sync-gsc"
+            echo
+          done
+          curl -sS --fail-with-body --max-time 90 \
+            -H "x-cron-secret: $CRON_SECRET" \
+            "$APP_URL/api/cron/prospect"

@@ -159,6 +159,8 @@ model Organization {
   releaseVerifications     ReleaseVerification[]
   seoSnapshots             SeoSnapshot[]
   expenses                 Expense[]
+  prospectTargets          ProspectTarget[]
+  prospectingRuns          ProspectingRun[]
 }
 
 model Role {
@@ -271,15 +273,17 @@ model Lead {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  isDemo       Boolean           @default(false)
-  evidence     LeadEvidence[]
-  sends        OutreachSend[]
-  replies      OutreachReply[]
-  meetings     Meeting[]
-  organization Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  scores       LeadScore[]
-  outreach     OutreachMessage[]
-  deals        Deal[]
+  isDemo           Boolean           @default(false)
+  evidence         LeadEvidence[]
+  sends            OutreachSend[]
+  replies          OutreachReply[]
+  meetings         Meeting[]
+  // Why this prospect was picked: low_organic_rank | low_maps_rank | weak_website | manual
+  outreachCategory String?
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  scores           LeadScore[]
+  outreach         OutreachMessage[]
+  deals            Deal[]
 
   @@index([organizationId])
   @@index([status])
@@ -1386,6 +1390,11 @@ model OutreachSend {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  // Provider delivery events (from the email provider's webhook).
+  deliveredAt  DateTime?
+  openedAt     DateTime?
+  openCount    Int          @default(0)
+  clickedAt    DateTime?
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   lead         Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
@@ -1546,4 +1555,47 @@ model GscRankDay {
 
   @@unique([propertyId, query, date])
   @@index([propertyId, date])
+}
+
+// A search the prospecting agent repeats: one niche in one place.
+model ProspectTarget {
+  id             String    @id @default(uuid())
+  organizationId String
+  niche          String
+  keyword        String // what a customer searches, e.g. "gutter installation"
+  city           String
+  state          String
+  active         Boolean   @default(true)
+  lastRunAt      DateTime?
+  isDemo         Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs         ProspectingRun[]
+
+  @@unique([organizationId, keyword, city, state])
+  @@index([organizationId, active, lastRunAt])
+}
+
+// One run of the prospecting agent, with what it found and why it skipped the rest.
+model ProspectingRun {
+  id             String   @id @default(uuid())
+  organizationId String
+  targetId       String?
+  query          String
+  location       String
+  provider       String // google_cse | ubersuggest_import | fixture
+  status         String // ok | no_provider | error
+  resultsSeen    Int      @default(0)
+  added          Int      @default(0)
+  skipped        Json?
+  error          String?
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  target       ProspectTarget? @relation(fields: [targetId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
 }

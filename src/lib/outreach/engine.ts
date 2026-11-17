@@ -13,6 +13,7 @@ import {
   sendIdempotencyKey,
   type ReplyLabel,
 } from "@/lib/outreach/sequence";
+import { buildFollowUp, draftOptionsFromEnv } from "@/lib/outreach/draft";
 
 /**
  * Outreach engine: sequence scheduling, guarded sending, replies and meetings.
@@ -146,12 +147,7 @@ export async function startSequence(input: StartSequenceInput): Promise<{ create
     scheduledFor: when,
     toEmail: input.toEmail,
     subject: step === 0 ? input.subject : `Re: ${input.subject}`,
-    body:
-      step === 0
-        ? input.body
-        : step === 1
-          ? "Following up on my note below in case it got buried. Happy to send the short audit either way."
-          : "Last note from me. If the timing is off I will leave it here; the offer of the audit stands.",
+    body: step === 0 ? input.body : buildFollowUp(step, draftOptionsFromEnv()),
     approvalId: input.approvalId ?? null,
     idempotencyKey: sendIdempotencyKey(input.leadId, step),
     isDemo: input.isDemo,

@@ -1,11 +1,16 @@
 import Link from "next/link";
-import { LeadStatus } from "@prisma/client";
+import { ApprovalStatus, LeadStatus } from "@prisma/client";
 import { PageShell } from "@/components/layout/page-shell";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { ScoreBadge } from "@/components/ui/score-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LogReplyButton } from "@/components/outreach/log-reply";
+import { LogMeetingButton } from "@/components/outreach/log-meeting";
+import { ProspectingPanel, type TargetRow } from "@/components/outreach/prospecting-panel";
+import { googleCseProvider } from "@/lib/prospecting/agent";
+import { CATEGORY_LABEL } from "@/lib/prospecting/rules";
+import { groupOutreachStats, prospectStage, type StatLead, type StatRow } from "@/lib/prospecting/stats";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
@@ -24,10 +29,58 @@ const SEND_BADGE: Record<string, { label: string; variant: "success" | "warning"
   needs_reconcile: { label: "Needs reconcile", variant: "warning" },
 };
 
-export default async function OutreachPage() {
+function StatTable({ title, rows, label, hrefFor }: { title: string; rows: StatRow[]; label: (k: string) => string; hrefFor: (k: string) => string }) {
+  return (
+    <section className="space-y-2">
+      <h2 className="text-sm font-semibold">{title}</h2>
+      {rows.length === 0 ? (
+        <EmptyState title="Nothing to show yet" description="Results appear here once prospects are added." />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <table className="w-full border-collapse text-sm">
+            <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
+              <tr>
+                <th className="px-3 py-2">Group</th>
+                <th className="px-3 py-2 text-right">Prospects</th>
+                <th className="px-3 py-2 text-right">To approve</th>
+                <th className="px-3 py-2 text-right">Sent</th>
+                <th className="px-3 py-2 text-right">Opened</th>
+                <th className="px-3 py-2 text-right">Follow-up due</th>
+                <th className="px-3 py-2 text-right">Replied</th>
+                <th className="px-3 py-2 text-right">Meetings</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-t border-card-border">
+                  <td className="px-3 py-2">
+                    <Link className="font-semibold hover:text-valiant" href={hrefFor(r.key)}>
+                      {label(r.key)}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2 text-right">{r.prospects}</td>
+                  <td className="px-3 py-2 text-right">{r.awaitingApproval}</td>
+                  <td className="px-3 py-2 text-right">{r.sent}</td>
+                  <td className="px-3 py-2 text-right">{r.opened}</td>
+                  <td className="px-3 py-2 text-right">{r.followUpsDue}</td>
+                  <td className="px-3 py-2 text-right">{r.replied}</td>
+                  <td className="px-3 py-2 text-right">{r.meetings}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default async function OutreachPage({ searchParams }: { searchParams?: { category?: string; niche?: string } }) {
   const { organizationId } = await requireSessionOrg();
   const scope = getDataScope();
   const scoped = { organizationId, isDemo: scope.isDemo };
+  const categoryFilter = searchParams?.category || null;
+  const nicheFilter = searchParams?.niche || null;
 
   const [metrics, queue, sends, replies, meetings, suppressed, leadOptions] = await Promise.all([
     salesMetrics(organizationId, scope.isDemo),
@@ -65,8 +118,84 @@ export default async function OutreachPage() {
 
   const sender = providerFor(scope.isDemo);
 
+  const [targets, prospectLeads, pendingDrafts] = await Promise.all([
+    prisma.prospectTarget.findMany({
+      where: scoped,
+      orderBy: { createdAt: "desc" },
+      include: { runs: { orderBy: { createdAt: "desc" }, take: 1 } },
+    }),
+    prisma.lead.findMany({
+      where: {
+        ...scoped,
+        OR: [{ outreachCategory: { not: null } }, { sends: { some: {} } }],
+      },
+      select: {
+        id: true,
+        businessName: true,
+        niche: true,
+        city: true,
+        state: true,
+        email: true,
+        outreachCategory: true,
+        sends: { select: { step: true, status: true, openedAt: true, scheduledFor: true } },
+        replies: { select: { label: true } },
+        meetings: { select: { status: true } },
+        evidence: { where: { kind: "rank_observation" }, orderBy: { observedAt: "desc" }, take: 1, select: { position: true, query: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500,
+    }),
+    prisma.approvalRequest.findMany({
+      where: { ...scoped, kind: "outreach_email", status: ApprovalStatus.PENDING, entityType: "Lead" },
+      select: { entityId: true },
+    }),
+  ]);
+  const pending: Record<string, true> = {};
+  pendingDrafts.forEach((a) => {
+    if (a.entityId) pending[a.entityId] = true;
+  });
+  const statLeads: (StatLead & { row: (typeof prospectLeads)[number] })[] = prospectLeads.map((l) => ({
+    id: l.id,
+    niche: l.niche,
+    outreachCategory: l.outreachCategory,
+    email: l.email,
+    hasPendingDraft: !!pending[l.id],
+    sends: l.sends,
+    replies: l.replies,
+    meetings: l.meetings,
+    row: l,
+  }));
+  const byCategory = groupOutreachStats(statLeads, "category");
+  const byNiche = groupOutreachStats(statLeads, "niche");
+  const shown = statLeads.filter(
+    (l) =>
+      (!categoryFilter || (l.outreachCategory ?? "manual") === categoryFilter) &&
+      (!nicheFilter || (l.niche || "Unspecified") === nicheFilter),
+  );
+  const targetRows: TargetRow[] = targets.map((t) => ({
+    id: t.id,
+    niche: t.niche,
+    keyword: t.keyword,
+    city: t.city,
+    state: t.state,
+    active: t.active,
+    lastRunAt: t.lastRunAt ? t.lastRunAt.toISOString() : null,
+    lastRun: t.runs[0]
+      ? { status: t.runs[0].status, resultsSeen: t.runs[0].resultsSeen, added: t.runs[0].added, provider: t.runs[0].provider, error: t.runs[0].error }
+      : null,
+  }));
+  const openedSends = sends.filter((s) => !!s.openedAt).length;
+
   return (
-    <PageShell title="Outreach Engine" actions={<LogReplyButton leads={leadOptions} />}>
+    <PageShell
+      title="Outreach Engine"
+      actions={
+        <div className="flex gap-2">
+          <LogMeetingButton leads={leadOptions} />
+          <LogReplyButton leads={leadOptions} />
+        </div>
+      }
+    >
       <div className="rounded-xl border border-card-border bg-card p-4 text-sm text-muted">
         Showing {scope.label.toLowerCase()}. Sequence: first email on approval, a follow-up after 4
         business days, then a final one 5 business days later. Suppression, replies and bookings are
@@ -87,12 +216,90 @@ export default async function OutreachPage() {
         <KpiCard label="Won monthly revenue" value={formatCurrency(metrics.wonMonthlyRevenue)} hint="Closed-won deals" />
       </div>
       <p className="text-xs text-muted">
-        Email opens are not counted here: they are an unreliable optional signal. {suppressed} address
+        Opens are reported by the email provider when the tracking image loads. Some mail apps load it
+        automatically and some block it, so treat an open as a hint, not proof. {suppressed} address
         {suppressed === 1 ? " is" : "es are"} on the do-not-email list.
       </p>
 
+      <ProspectingPanel targets={targetRows} providerConnected={googleCseProvider() !== null} />
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <StatTable
+          title="Results by category"
+          rows={byCategory}
+          label={(k) => CATEGORY_LABEL[k] ?? k}
+          hrefFor={(k) => `/outreach?category=${encodeURIComponent(k)}`}
+        />
+        <StatTable
+          title="Results by niche"
+          rows={byNiche}
+          label={(k) => k}
+          hrefFor={(k) => `/outreach?niche=${encodeURIComponent(k)}`}
+        />
+      </div>
+
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Emails</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">
+            Prospects
+            {categoryFilter ? ` · ${CATEGORY_LABEL[categoryFilter] ?? categoryFilter}` : ""}
+            {nicheFilter ? ` · ${nicheFilter}` : ""}
+          </h2>
+          {categoryFilter || nicheFilter ? (
+            <Link href="/outreach" className="text-xs font-semibold text-valiant">
+              Show all
+            </Link>
+          ) : null}
+        </div>
+        {shown.length === 0 ? (
+          <EmptyState
+            title="No prospects here yet"
+            description="Prospects appear after the prospecting agent runs a saved search, or when an email is drafted for a lead."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
+                <tr>
+                  <th className="px-4 py-3">Prospect</th>
+                  <th className="px-4 py-3">Category</th>
+                  <th className="px-4 py-3">Why picked</th>
+                  <th className="px-4 py-3">Contact</th>
+                  <th className="px-4 py-3">Where it stands</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.slice(0, 150).map((l) => {
+                  const rank = l.row.evidence[0];
+                  return (
+                    <tr key={l.id} className="border-t border-card-border">
+                      <td className="px-4 py-3">
+                        <Link className="font-semibold hover:text-valiant" href={`/leads/${l.id}`}>
+                          {l.row.businessName}
+                        </Link>
+                        <div className="text-xs text-muted">
+                          {[l.row.city, l.row.state].filter(Boolean).join(", ")} · {l.row.niche ?? "—"}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs">{CATEGORY_LABEL[l.outreachCategory ?? "manual"] ?? l.outreachCategory}</td>
+                      <td className="px-4 py-3 text-xs text-muted">
+                        {rank?.position ? `#${rank.position} for "${rank.query}"` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted">{l.email ?? "No email found"}</td>
+                      <td className="px-4 py-3 text-xs">{prospectStage(l)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold">
+          Emails <span className="font-normal text-muted">· {openedSends} opened of the {sends.length} shown</span>
+        </h2>
         {sends.length === 0 ? (
           <EmptyState
             title="No outreach emails yet"
@@ -107,6 +314,7 @@ export default async function OutreachPage() {
                   <th className="px-4 py-3">Step</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">When</th>
+                  <th className="px-4 py-3">Seen</th>
                   <th className="px-4 py-3">Receipt</th>
                 </tr>
               </thead>
@@ -126,6 +334,17 @@ export default async function OutreachPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
                         {s.sentAt ? `Sent ${s.sentAt.toLocaleString()}` : `Due ${s.scheduledFor.toLocaleString()}`}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
+                        {s.clickedAt
+                          ? `Clicked ${s.clickedAt.toLocaleString()}`
+                          : s.openedAt
+                            ? `Opened ${s.openedAt.toLocaleString()}${s.openCount > 1 ? ` (${s.openCount}×)` : ""}`
+                            : s.deliveredAt
+                              ? "Delivered, not opened"
+                              : s.status === "sent"
+                                ? "No delivery report yet"
+                                : "—"}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted">
                         {s.providerMessageId ? `${s.provider}: ${s.providerMessageId}` : "—"}
@@ -171,7 +390,7 @@ export default async function OutreachPage() {
           {meetings.length === 0 ? (
             <EmptyState
               title="No meetings recorded"
-              description="A meeting appears here only after the calendar confirms it."
+              description="Use Log a meeting once the calendar has the booking. It also stops the remaining follow-ups."
             />
           ) : (
             <div className="space-y-2">
