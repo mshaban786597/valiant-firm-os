@@ -3,7 +3,6 @@ import { requireApiOrg } from "@/lib/api-org";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
-import { telemetry } from "@/lib/telemetry";
 import { emailCampaignUpdateSchema } from "@/lib/schemas/email-campaign";
 
 export async function GET(

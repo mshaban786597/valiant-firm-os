@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { storeUpdateSchema } from "@/lib/schemas/ecommerce";
 
-const DAY = 86_400_000;
 
 export async function GET(
   _req: Request,
