@@ -2,7 +2,7 @@ name: Automation schedule
 
 # Calls the app's secret-gated scheduled endpoints.
 #   every 15 minutes: due website checks, due outreach emails
-#   once a day:       Search Console refresh, prospecting agent
+#   once a day:       Search Console refresh, Google Analytics refresh, prospecting agent
 # Requires repo secrets APP_URL and CRON_SECRET. Scheduled workflows only run
 # from the default branch.
 on:
@@ -58,6 +58,13 @@ jobs:
             curl -sS --fail-with-body --max-time 90 \
               -H "x-cron-secret: $CRON_SECRET" \
               "$APP_URL/api/cron/sync-gsc"
+            echo
+          done
+          # Google Analytics: a few properties per call as well.
+          for i in 1 2 3 4; do
+            curl -sS --fail-with-body --max-time 90 \
+              -H "x-cron-secret: $CRON_SECRET" \
+              "$APP_URL/api/cron/sync-ga4"
             echo
           done
           curl -sS --fail-with-body --max-time 90 \

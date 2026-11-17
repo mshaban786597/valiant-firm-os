@@ -79,8 +79,8 @@ export const INTEGRATIONS: ToolIntegration[] = [
     name: "Google Analytics 4",
     category: "Google Tools",
     powers: "Traffic, conversions, sources",
-    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GA4_PROPERTY_ID"],
-    data: "sample",
+    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON"],
+    data: "live",
   },
   {
     id: "gtm",

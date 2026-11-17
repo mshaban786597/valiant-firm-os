@@ -21,6 +21,7 @@ const PROTECTED_PREFIXES = [
   "/integrations",
   "/health",
   "/seo",
+  "/analytics",
   "/gbp",
   "/google-ads",
   "/email-campaigns",

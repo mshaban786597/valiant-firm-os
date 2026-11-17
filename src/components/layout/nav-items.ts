@@ -66,6 +66,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/monitoring", label: "Monitoring", icon: ShieldAlert },
       { href: "/health", label: "Health", icon: HeartPulse },
       { href: "/seo", label: "SEO / GSC", icon: Search },
+      { href: "/analytics", label: "Analytics (GA4)", icon: LineChart },
       { href: "/gbp", label: "Google Business", icon: MapPin },
       { href: "/google-ads", label: "Google Ads", icon: BarChart3 },
       { href: "/content", label: "Content", icon: LineChart },

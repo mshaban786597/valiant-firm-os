@@ -135,6 +135,8 @@ model Organization {
   invoiceLineItems         InvoiceLineItem[]
   gbpLocations             GbpLocation[]
   gscProperties            GscProperty[]
+  ga4Properties            Ga4Property[]
+  ga4Metrics               Ga4Metric[]
   googleAdsCampaigns       GoogleAdsCampaign[]
   emailCampaigns           EmailCampaign[]
   portalTokens             ClientPortalToken[]
@@ -404,6 +406,7 @@ model Client {
 
   gbpLocations       GbpLocation[]
   gscProperties      GscProperty[]
+  ga4Properties      Ga4Property[]
   googleAdsCampaigns GoogleAdsCampaign[]
   portalTokens       ClientPortalToken[]
   contacts           Contact[]
@@ -1598,4 +1601,63 @@ model ProspectingRun {
   target       ProspectTarget? @relation(fields: [targetId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, createdAt])
+}
+
+// A Google Analytics 4 property the service account can read.
+model Ga4Property {
+  id               String    @id @default(uuid())
+  organizationId   String
+  clientId         String?
+  propertyId       String // GA4 numeric property id
+  displayName      String
+  accountName      String?
+  websiteUrl       String?
+  syncState        String    @default("never") // never | ok | error | needs_reauth | quota | forbidden
+  lastSyncAt       DateTime?
+  lastAttemptAt    DateTime?
+  lastError        String?
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  sessions28d      Int       @default(0)
+  users28d         Int       @default(0)
+  newUsers28d      Int       @default(0)
+  keyEvents28d     Int       @default(0)
+  views28d         Int       @default(0)
+  engagementRate   Float?
+  avgEngagementSec Float?
+  prevSessions28d  Int?
+  prevUsers28d     Int?
+  prevKeyEvents28d Int?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  metrics      Ga4Metric[]
+
+  @@unique([organizationId, propertyId])
+  @@index([organizationId, clientId])
+}
+
+// One breakdown row for a property and period: a day, channel, source, landing page or device.
+model Ga4Metric {
+  id              String   @id @default(uuid())
+  organizationId  String
+  ga4PropertyId   String
+  dimension       String // date | channel | source | landing_page | device
+  key             String
+  sessions        Int      @default(0)
+  users           Int      @default(0)
+  keyEvents       Int      @default(0)
+  engagedSessions Int      @default(0)
+  views           Int      @default(0)
+  periodStart     DateTime
+  periodEnd       DateTime
+  createdAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  property     Ga4Property  @relation(fields: [ga4PropertyId], references: [id], onDelete: Cascade)
+
+  @@unique([ga4PropertyId, dimension, key, periodStart, periodEnd])
+  @@index([organizationId, ga4PropertyId, dimension])
 }
