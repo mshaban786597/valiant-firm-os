@@ -76,7 +76,11 @@ export async function recordCheckResult(
 
   let consecutiveFailures = previousFailures;
   if (result.status === "ok") consecutiveFailures = 0;
-  else if (result.status === "fail" && trigger !== "retry") consecutiveFailures = previousFailures + 1;
+  // A retry is not a fresh observation, so it never adds to an existing failure
+  // streak. But a failure first seen on a re-run still counts as failure number one.
+  else if (result.status === "fail" && (trigger !== "retry" || previousFailures === 0)) {
+    consecutiveFailures = previousFailures + 1;
+  }
 
   const check = await prisma.monitorCheck.create({
     data: {

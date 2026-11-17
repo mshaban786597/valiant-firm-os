@@ -8,11 +8,11 @@ import {
   contentHash,
   extractLinks,
   isBrokenStatus,
-  summarizePageSpeed,
 } from "@/lib/monitoring/analyzers";
 import { isAdvancedKind } from "@/lib/monitoring/advanced";
 import { runAdvancedCheck } from "@/lib/monitoring/advanced-runner";
 import { getGoogleAccessToken } from "@/lib/integrations/google-auth";
+import { buildPageSpeedReport, pageSpeedDetail } from "@/lib/monitoring/pagespeed";
 
 type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown; kind?: string | null };
 
@@ -239,13 +239,18 @@ export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult
             checkKind,
           };
         }
-        const s = summarizePageSpeed(await r.json());
+        const report = buildPageSpeedReport(await r.json());
+        if (report.score === null) {
+          return { status: "unknown", detail: pageSpeedDetail(report), affectedObject: url, checkKind };
+        }
         return {
-          status: s.ok ? "ok" : "fail",
+          // Fails only in Google's "poor" band; the reason is always stored.
+          status: report.verdict === "poor" ? "fail" : "ok",
           latencyMs: Date.now() - started,
-          detail: s.detail,
+          detail: pageSpeedDetail(report),
           affectedObject: url,
           checkKind,
+          state: { pageSpeed: report, measuredAt: new Date().toISOString() },
         };
       }
 

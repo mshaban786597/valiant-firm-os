@@ -102,6 +102,21 @@ describe("recordCheckResult lifecycle", () => {
     );
   });
 
+  it("a failure first seen on a re-run still opens the incident (and a retry never extends a streak)", async () => {
+    p.incident.findFirst.mockResolvedValue(null);
+    const first = await recordCheckResult({ ...monitor, consecutiveFailures: 0 }, { status: "fail" }, { trigger: "retry" });
+    expect(first.action).toBe("incident_opened");
+
+    p.incident.findFirst.mockResolvedValue(null);
+    const blip = await recordCheckResult(
+      { ...monitor, confirmAfter: 2, consecutiveFailures: 1 },
+      { status: "fail" },
+      { trigger: "retry" },
+    );
+    expect(blip.action).toBe("failure_unconfirmed");
+    expect(blip.consecutiveFailures).toBe(1); // the retry did not confirm it
+  });
+
   it("waits for the confirmation threshold before opening an incident", async () => {
     p.incident.findFirst.mockResolvedValue(null);
     const first = await recordCheckResult(

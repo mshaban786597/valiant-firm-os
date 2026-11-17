@@ -11,6 +11,8 @@ import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
 import { getMonitoringSummary } from "@/lib/monitoring/summary";
 import { checkState, noIncidentsCopy } from "@/lib/monitoring/state";
+import { SpeedReport, type SpeedRow } from "@/components/monitoring/speed-report";
+import type { PageSpeedReport } from "@/lib/monitoring/pagespeed";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +68,20 @@ export default async function MonitoringPage() {
     incidentCount: m._count.incidents,
   }));
 
+  const speedRows: SpeedRow[] = [];
+  monitors.forEach((m) => {
+    if (m.type !== "PAGE_SPEED") return;
+    const st = m.state as { pageSpeed?: PageSpeedReport; measuredAt?: string } | null;
+    if (!st?.pageSpeed) return;
+    let site = m.target;
+    try {
+      site = new URL(m.target).host;
+    } catch {
+      /* keep the raw target */
+    }
+    speedRows.push({ id: m.id, site, measuredAt: st.measuredAt ?? null, report: st.pageSpeed });
+  });
+
   const incidentRows: IncidentRow[] = incidents.map((i) => ({
     id: i.id,
     title: i.title,
@@ -81,6 +97,7 @@ export default async function MonitoringPage() {
   return (
     <PageShell title="Monitoring & Incidents">
       <ReconcileStrip summary={summary} focus="checks" />
+      <SpeedReport rows={speedRows} />
       <MonitoringWorkspace
         monitors={monitorRows}
         incidents={incidentRows}
