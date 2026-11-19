@@ -7,7 +7,7 @@ export const gscCreateSchema = z.object({
 });
 
 export const gscUpdateSchema = z.object({
-  action: z.literal("refresh").optional(),
+  action: z.enum(["refresh", "test", "disconnect"]).optional(),
   verified: z.boolean().optional(),
   clientId: z.string().uuid().nullable().optional(),
 });

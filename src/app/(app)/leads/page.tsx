@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export default async function LeadsPage({
   searchParams,
@@ -15,6 +16,7 @@ export default async function LeadsPage({
   searchParams?: Record<string, string | undefined>;
 }) {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const q = searchParams?.q?.trim();
   const niche = searchParams?.niche?.trim();
@@ -42,6 +44,7 @@ export default async function LeadsPage({
   const leads = await prisma.lead.findMany({
     where: {
       organizationId,
+      isDemo,
       ...(filters.length ? { AND: filters } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -50,7 +53,7 @@ export default async function LeadsPage({
 
   const niches = await prisma.lead.groupBy({
     by: ["niche"],
-    where: { organizationId },
+    where: { organizationId, isDemo },
   });
 
   const won = new Set<LeadStatus>([LeadStatus.ClosedWon]);

@@ -6,7 +6,8 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/seo", label: "Overview" },
-  { href: "/seo/keywords", label: "Keywords" },
+  { href: "/seo/keywords", label: "Queries" },
+  { href: "/seo/opportunities", label: "Opportunities" },
   { href: "/seo/rank-tracking", label: "Rank tracking" },
 ];
 

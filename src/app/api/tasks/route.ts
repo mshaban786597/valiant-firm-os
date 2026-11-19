@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { TaskPriority, TaskStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
   const task = await prisma.task.create({
     data: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       clientId: parsed.data.clientId,
       title: parsed.data.title,
       description: parsed.data.description,

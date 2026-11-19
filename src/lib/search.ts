@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { prisma } from "@/lib/prisma";
 
 export interface SearchHit {
@@ -30,11 +31,13 @@ export async function globalSearch(
     return { query: q, total: 0, groups: [] };
   }
 
+  const isDemo = getDataScope().isDemo;
   const [leads, clients, deals, tasks, reports, invoices, contacts, campaigns, stores] =
     await Promise.all([
     prisma.lead.findMany({
       where: {
         organizationId,
+        isDemo,
         OR: [{ businessName: ci(q) }, { email: ci(q) }, { city: ci(q) }, { niche: ci(q) }],
       },
       select: { id: true, businessName: true, city: true, niche: true },
@@ -43,6 +46,7 @@ export async function globalSearch(
     prisma.client.findMany({
       where: {
         organizationId,
+        isDemo,
         OR: [{ businessName: ci(q) }, { primaryContact: ci(q) }, { email: ci(q) }],
       },
       select: { id: true, businessName: true, status: true },
@@ -51,18 +55,19 @@ export async function globalSearch(
     prisma.deal.findMany({
       where: {
         organizationId,
+        isDemo,
         OR: [{ businessName: ci(q) }, { contactName: ci(q) }],
       },
       select: { id: true, businessName: true, stage: true },
       take: 8,
     }),
     prisma.task.findMany({
-      where: { organizationId, title: ci(q) },
+      where: { organizationId, isDemo, title: ci(q) },
       select: { id: true, title: true, status: true, clientId: true },
       take: 8,
     }),
     prisma.report.findMany({
-      where: { organizationId, OR: [{ month: ci(q) }, { reportSummary: ci(q) }] },
+      where: { organizationId, isDemo, OR: [{ month: ci(q) }, { reportSummary: ci(q) }] },
       select: { id: true, month: true, clientId: true },
       take: 8,
     }),

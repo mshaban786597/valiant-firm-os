@@ -134,7 +134,7 @@ describe("website suite", () => {
   });
   it("covers every diagram check exactly once", () => {
     const types = WEBSITE_SUITE.map((s) => s.type);
-    expect(types.length).toBe(9);
+    expect(types.length).toBe(13);
     expect(types.filter((t, i) => types.indexOf(t) !== i)).toEqual([]);
     expect(WEBSITE_SUITE.find((s) => s.type === "UPTIME")?.cadenceMinutes).toBe(15);
   });
@@ -180,6 +180,12 @@ describe("integration catalog", () => {
     expect(integrationState(ahrefs, { AHREFS_API_KEY: "k" })).toBe("connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);
     expect(integrationState(getIntegration("site-monitor")!, {})).toBe("connected");
+    // PageSpeed works with either the service account or its own API key.
+    const psi = getIntegration("pagespeed")!;
+    expect(integrationState(psi, {})).toBe("not_connected");
+    expect(missingEnv(psi, {})).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON or PAGESPEED_API_KEY"]);
+    expect(integrationState(psi, { GOOGLE_SERVICE_ACCOUNT_JSON: "{}" })).toBe("connected");
+    expect(integrationState(psi, { PAGESPEED_API_KEY: "k" })).toBe("connected");
   });
   it("never calls a provider when credentials are missing", async () => {
     const r = await testIntegration(getIntegration("stripe")!, {});

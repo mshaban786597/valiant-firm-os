@@ -4,13 +4,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { storeCreateSchema } from "@/lib/schemas/ecommerce";
-import {
-  sampleStoreDayMetric,
-  sampleStoreOrders,
-  sampleStoreProducts,
-} from "@/lib/integrations/sample";
 
-const DAY = 86_400_000;
 
 export async function GET() {
   const org = await requireApiOrg();
@@ -59,57 +53,10 @@ export async function POST(req: Request) {
       storeUrl: d.storeUrl ?? null,
       externalId: d.externalId ?? null,
       currency: d.currency,
-      lastSyncAt: new Date(),
     },
   });
 
-  // Seed deterministic sample data so the store dashboard isn't empty until a
-  // real marketplace API is connected. Seeded from the store id.
-  const seed = store.id;
-  const now = Date.now();
-
-  await prisma.ecommerceProduct.createMany({
-    data: sampleStoreProducts(seed).map((p) => ({
-      organizationId: org.organizationId,
-      storeId: store.id,
-      title: p.title,
-      sku: p.sku,
-      priceCents: p.priceCents,
-      currency: store.currency,
-      inventory: p.inventory,
-      status: p.status,
-    })),
-  });
-
-  await prisma.ecommerceOrder.createMany({
-    data: sampleStoreOrders(seed).map((o) => ({
-      organizationId: org.organizationId,
-      storeId: store.id,
-      totalCents: o.totalCents,
-      currency: store.currency,
-      itemCount: o.itemCount,
-      status: o.status,
-      placedAt: new Date(now - o.dayOffset * DAY),
-    })),
-  });
-
-  await prisma.ecommerceMetric.createMany({
-    data: Array.from({ length: 30 }, (_, dayIndex) => {
-      const m = sampleStoreDayMetric(seed, dayIndex);
-      const date = new Date(now - dayIndex * DAY);
-      date.setHours(0, 0, 0, 0);
-      return {
-        organizationId: org.organizationId,
-        storeId: store.id,
-        date,
-        revenueCents: m.revenueCents,
-        orders: m.orders,
-        units: m.units,
-        sessions: m.sessions,
-        conversionRate: m.conversionRate,
-      };
-    }),
-  });
+  // Products, orders and sales stay empty until the store's API is connected.
 
   await writeAuditLog({
     organizationId: org.organizationId,

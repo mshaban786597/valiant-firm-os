@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { DealStage } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
   const deal = await prisma.deal.create({
     data: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       leadId: parsed.data.leadId ?? undefined,
       businessName: parsed.data.businessName,
       contactName: parsed.data.contactName,

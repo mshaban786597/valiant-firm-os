@@ -8,10 +8,13 @@ import {
   contentHash,
   extractLinks,
   isBrokenStatus,
-  summarizePageSpeed,
 } from "@/lib/monitoring/analyzers";
+import { isAdvancedKind } from "@/lib/monitoring/advanced";
+import { runAdvancedCheck } from "@/lib/monitoring/advanced-runner";
+import { getGoogleAccessToken } from "@/lib/integrations/google-auth";
+import { buildPageSpeedReport, pageSpeedDetail } from "@/lib/monitoring/pagespeed";
 
-type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown };
+type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown; kind?: string | null };
 
 const UA = "ValiantFirmMonitor/1.0 (+https://valiant-firm-os.vercel.app)";
 
@@ -37,10 +40,13 @@ async function fetchPage(url: string, timeoutMs = 12_000) {
  * LEAD_ROUTE/CUSTOM runs a real probe against the live site.
  */
 export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult> {
-  const checkKind = monitor.type.toLowerCase();
+  const checkKind = (monitor.kind ?? monitor.type).toLowerCase();
   const url = toUrl(monitor.target);
 
   try {
+    if (isAdvancedKind(monitor.kind)) {
+      return await runAdvancedCheck(monitor.kind, monitor.target, monitor.state);
+    }
     switch (monitor.type) {
       case MonitorType.UPTIME:
       case MonitorType.ROUTE:
@@ -211,24 +217,40 @@ export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult
         const api =
           `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}` +
           `&strategy=mobile&category=performance${key ? `&key=${encodeURIComponent(key)}` : ""}`;
+        // No API key: authenticate with the Google service account instead, which
+        // gives the project's own PageSpeed quota. Neither → the shared keyless quota.
+        const headers: Record<string, string> = {};
+        let authed = !!key;
+        if (!key) {
+          const token = await getGoogleAccessToken(["openid"]);
+          if (token.ok) {
+            headers.authorization = `Bearer ${token.token}`;
+            authed = true;
+          }
+        }
         const started = Date.now();
-        const r = await fetch(api, { signal: AbortSignal.timeout(50_000) });
+        const r = await fetch(api, { headers, signal: AbortSignal.timeout(50_000) });
         if (!r.ok) {
           return {
             status: "unknown",
             statusCode: r.status,
-            detail: `PageSpeed API unavailable (HTTP ${r.status})${key ? "" : " — set PAGESPEED_API_KEY for a dedicated quota"}`,
+            detail: `PageSpeed API unavailable (HTTP ${r.status})${authed ? "" : " — connect a Google service account or set PAGESPEED_API_KEY"}`,
             affectedObject: url,
             checkKind,
           };
         }
-        const s = summarizePageSpeed(await r.json());
+        const report = buildPageSpeedReport(await r.json());
+        if (report.score === null) {
+          return { status: "unknown", detail: pageSpeedDetail(report), affectedObject: url, checkKind };
+        }
         return {
-          status: s.ok ? "ok" : "fail",
+          // Fails only in Google's "poor" band; the reason is always stored.
+          status: report.verdict === "poor" ? "fail" : "ok",
           latencyMs: Date.now() - started,
-          detail: s.detail,
+          detail: pageSpeedDetail(report),
           affectedObject: url,
           checkKind,
+          state: { pageSpeed: report, measuredAt: new Date().toISOString() },
         };
       }
 
@@ -242,6 +264,15 @@ export async function runMonitorCheck(monitor: MonitorLike): Promise<CheckResult
         };
     }
   } catch (err) {
+    // A crawl that cannot finish is not proof the site is broken.
+    if (monitor.kind === "SITE_CRAWL") {
+      return {
+        status: "unknown",
+        detail: err instanceof Error ? `Crawl did not complete: ${err.name}` : "Crawl error",
+        affectedObject: monitor.target,
+        checkKind,
+      };
+    }
     // A measurement tool timing out is not a site outage.
     if (monitor.type === MonitorType.PAGE_SPEED) {
       return {

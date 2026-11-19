@@ -53,6 +53,13 @@ export async function PATCH(
 
   const incident = await prisma.incident.update({ where: { id: existing.id }, data });
 
+  if (d.status === "RESOLVED") {
+    await prisma.founderAlert.updateMany({
+      where: { incidentId: incident.id, resolvedAt: null },
+      data: { resolvedAt: new Date() },
+    });
+  }
+
   if (d.status || d.note) {
     await prisma.incidentEvent.create({
       data: {

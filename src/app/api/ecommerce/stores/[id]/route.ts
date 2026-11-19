@@ -4,9 +4,7 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { storeUpdateSchema } from "@/lib/schemas/ecommerce";
-import { sampleStoreDayMetric } from "@/lib/integrations/sample";
 
-const DAY = 86_400_000;
 
 export async function GET(
   _req: Request,
@@ -49,33 +47,10 @@ export async function PATCH(
   const d = parsed.data;
 
   if (d.action === "refresh") {
-    // No marketplace API connected → regenerate deterministic sample metrics.
-    const now = Date.now();
-    const seed = `${existing.id}:${now}`;
-    await prisma.$transaction([
-      prisma.ecommerceMetric.deleteMany({ where: { storeId: existing.id } }),
-      prisma.ecommerceMetric.createMany({
-        data: Array.from({ length: 30 }, (_, dayIndex) => {
-          const m = sampleStoreDayMetric(seed, dayIndex);
-          const date = new Date(now - dayIndex * DAY);
-          date.setHours(0, 0, 0, 0);
-          return {
-            organizationId: org.organizationId,
-            storeId: existing.id,
-            date,
-            revenueCents: m.revenueCents,
-            orders: m.orders,
-            units: m.units,
-            sessions: m.sessions,
-            conversionRate: m.conversionRate,
-          };
-        }),
-      }),
-      prisma.ecommerceStore.update({
-        where: { id: existing.id },
-        data: { lastSyncAt: new Date() },
-      }),
-    ]);
+    return NextResponse.json(
+      { error: "This store is not connected to its marketplace yet, so there is nothing to sync. No numbers were changed." },
+      { status: 409 },
+    );
   } else {
     const data: Record<string, unknown> = {};
     if (d.name !== undefined) data.name = d.name;

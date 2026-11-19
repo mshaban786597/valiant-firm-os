@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { ClientStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
   const client = await prisma.client.create({
     data: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       businessName: parsed.data.businessName,
       primaryContact: parsed.data.primaryContact,
       email: parsed.data.email,

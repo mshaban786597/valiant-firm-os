@@ -6,8 +6,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { AddWebsiteButton, RunAllButton } from "@/components/automation/site-actions";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
 import { channelStatus } from "@/lib/notifications/dispatch";
+import { AGENTS, DISPATCH_OWNER, agentStatus } from "@/lib/agents/registry";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
@@ -17,27 +19,28 @@ export const dynamic = "force-dynamic";
  */
 export default async function AutomationSystemPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const open = { in: [IncidentStatus.OPEN, IncidentStatus.ACKNOWLEDGED] };
 
   const [monitors, checks24h, openIncidents, incidents24h, resolved24h, openTasks, pendingApprovals, reports, alertsSent, clients] =
     await Promise.all([
       prisma.monitor.findMany({
-        where: { organizationId },
-        select: { id: true, name: true, target: true, type: true, lastStatus: true, lastCheckAt: true, enabled: true },
+        where: { organizationId, isDemo },
+        select: { id: true, name: true, target: true, type: true, kind: true, lastStatus: true, lastCheckAt: true, enabled: true },
         orderBy: { createdAt: "asc" },
         take: 500,
       }),
-      prisma.monitorCheck.count({ where: { organizationId, observedAt: { gte: since } } }),
-      prisma.incident.count({ where: { organizationId, status: open } }),
-      prisma.incident.count({ where: { organizationId, firstSeenAt: { gte: since } } }),
-      prisma.incident.count({ where: { organizationId, resolvedAt: { gte: since } } }),
-      prisma.task.count({ where: { organizationId, serviceType: "Monitoring", status: { not: "Completed" } } }),
-      prisma.approvalRequest.count({ where: { organizationId, status: ApprovalStatus.PENDING } }),
-      prisma.report.count({ where: { organizationId } }).catch(() => 0),
-      prisma.notificationLog.count({ where: { organizationId, status: "sent", createdAt: { gte: since } } }),
+      prisma.monitorCheck.count({ where: { organizationId, observedAt: { gte: since }, monitor: { isDemo } } }),
+      prisma.incident.count({ where: { organizationId, isDemo, status: open } }),
+      prisma.incident.count({ where: { organizationId, isDemo, firstSeenAt: { gte: since } } }),
+      prisma.incident.count({ where: { organizationId, isDemo, resolvedAt: { gte: since } } }),
+      prisma.task.count({ where: { organizationId, isDemo, serviceType: "Monitoring", status: { not: "Completed" } } }),
+      prisma.approvalRequest.count({ where: { organizationId, isDemo, status: ApprovalStatus.PENDING } }),
+      prisma.report.count({ where: { organizationId, isDemo } }).catch(() => 0),
+      prisma.notificationLog.count({ where: { organizationId, isDemo, status: "sent", createdAt: { gte: since } } }),
       prisma.client.findMany({
-        where: { organizationId },
+        where: { organizationId, isDemo },
         select: { id: true, businessName: true },
         orderBy: { businessName: "asc" },
       }),
@@ -47,7 +50,7 @@ export default async function AutomationSystemPage() {
   const siteOrder: string[] = [];
   const sites: Record<string, { target: string; total: number; ok: number; fail: number; lastCheckAt: Date | null }> = {};
   monitors.forEach((m) => {
-    if (m.type === "LEAD_ROUTE" || m.type === "CUSTOM") return;
+    if (!m.kind && (m.type === "LEAD_ROUTE" || m.type === "CUSTOM")) return;
     let host = m.target;
     try {
       host = new URL(m.target.startsWith("http") ? m.target : `https://${m.target}`).host;
@@ -158,6 +161,40 @@ export default async function AutomationSystemPage() {
             </table>
           </div>
         )}
+      </section>
+
+      {/* Agents */}
+      <section className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold">Agents</h2>
+          <span className="text-xs text-muted">Dispatch owner: {DISPATCH_OWNER}</span>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {AGENTS.map((a) => {
+            const st = agentStatus(a);
+            return (
+              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-semibold">{a.name}</div>
+                    <div className="text-xs text-muted">{a.role}</div>
+                  </div>
+                  <StatusBadge
+                    label={st.runtimeConnected ? "Runtime connected" : "Runtime not connected"}
+                    variant={st.runtimeConnected ? "success" : "neutral"}
+                  />
+                </div>
+                <dl className="mt-3 space-y-1 text-xs text-muted">
+                  <div><dt className="inline font-semibold">Served by: </dt><dd className="inline">{st.servedBy}</dd></div>
+                  <div><dt className="inline font-semibold">Input: </dt><dd className="inline">{a.input}</dd></div>
+                  <div><dt className="inline font-semibold">Output: </dt><dd className="inline">{a.output}</dd></div>
+                  <div><dt className="inline font-semibold">Evidence: </dt><dd className="inline">{a.evidence}</dd></div>
+                  <div><dt className="inline font-semibold">Budget: </dt><dd className="inline">{a.budget}</dd></div>
+                </dl>
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* System status */}

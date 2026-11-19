@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { LeadStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
@@ -88,6 +89,7 @@ export async function POST(req: Request) {
   const lead = await prisma.lead.create({
     data: {
       organizationId: org.organizationId,
+      isDemo: getDataScope().isDemo,
       ...parsed.data,
       weaknessTags: parsed.data.weaknessTags ?? [],
       status: parsed.data.status ?? LeadStatus.Raw,
@@ -115,6 +117,7 @@ export async function POST(req: Request) {
     title: lead.businessName,
     body: [lead.niche, [lead.city, lead.state].filter(Boolean).join(", "), lead.source].filter(Boolean).join(" · "),
     path: "/leads",
+    isDemo: lead.isDemo,
   }).catch(() => []);
 
   return NextResponse.json({ lead });

@@ -3,7 +3,6 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { adsUpdateSchema } from "@/lib/schemas/google-ads";
-import { sampleAdsMetrics } from "@/lib/integrations/sample";
 
 export async function PATCH(
   req: Request,
@@ -26,15 +25,10 @@ export async function PATCH(
 
   const data: Record<string, unknown> = {};
   if (parsed.data.action === "refresh") {
-    const m = sampleAdsMetrics(`${existing.campaignId}:${Date.now()}`);
-    Object.assign(data, {
-      spend: m.spend,
-      impressions: m.impressions,
-      clicks: m.clicks,
-      conversions: m.conversions,
-      costPerConv: m.costPerConv,
-      lastSyncAt: new Date(),
-    });
+    return NextResponse.json(
+      { error: "Google Ads is not connected yet, so there is nothing to sync. No numbers were changed." },
+      { status: 409 },
+    );
   }
   if (parsed.data.status !== undefined) data.status = parsed.data.status;
   if (parsed.data.clientId !== undefined) data.clientId = parsed.data.clientId;

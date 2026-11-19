@@ -4,7 +4,8 @@ import { MonitorType } from "@prisma/client";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
-import { WEBSITE_SUITE, normalizeSiteUrl } from "@/lib/monitoring/analyzers";
+import { WEBSITE_SUITE, normalizeSiteUrl, suiteDbFields } from "@/lib/monitoring/analyzers";
+import { getDataScope } from "@/lib/scope";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,8 @@ const schema = z.object({
   url: z.string().min(3).max(500),
   label: z.string().max(80).optional(),
   clientId: z.string().uuid().nullable().optional(),
+  environment: z.enum(["production", "staging"]).default("production"),
+  owner: z.string().max(120).optional(),
 });
 
 /** Add a website: creates the full monitor suite (skips types that already exist). */
@@ -35,9 +38,9 @@ export async function POST(req: Request) {
 
   const existing = await prisma.monitor.findMany({
     where: { organizationId: org.organizationId, target: url },
-    select: { type: true },
+    select: { type: true, kind: true },
   });
-  const have = existing.map((e) => e.type as string);
+  const have = existing.map((e) => e.kind ?? (e.type as string));
   const site = parsed.data.label?.trim() || new URL(url).host;
   const toCreate = WEBSITE_SUITE.filter((s) => have.indexOf(s.type) === -1);
 
@@ -46,9 +49,14 @@ export async function POST(req: Request) {
       organizationId: org.organizationId,
       clientId: parsed.data.clientId ?? null,
       name: `${site} — ${s.label}`,
-      type: s.type as MonitorType,
+      type: suiteDbFields(s).type as MonitorType,
+      kind: suiteDbFields(s).kind,
       target: url,
       cadenceMinutes: s.cadenceMinutes,
+      confirmAfter: s.confirmAfter,
+      environment: parsed.data.environment,
+      owner: parsed.data.owner ?? null,
+      isDemo: getDataScope().isDemo,
     })),
   });
 

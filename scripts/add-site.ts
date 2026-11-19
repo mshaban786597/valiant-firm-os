@@ -1,58 +1,129 @@
 /**
- * Add a website to monitoring from the command line and run its first cycle.
- * Same logic as the "Add website" + "Run full cycle" buttons.
+ * Add a website to live monitoring from the command line and run its first
+ * cycle. Same logic as the "Add website" + "Run all checks" buttons.
  *
- *   npm run site:add -- https://example.com "Short name"
+ *   npm run site:add -- https://example.com "Short name" [--routes] [--owner "Name"]
+ *
+ * --routes  also adds a status check for up to 5 critical internal pages found
+ *           on the home page (contact, quote, service pages first).
  */
 import { MonitorType, PrismaClient } from "@prisma/client";
-import { WEBSITE_SUITE, normalizeSiteUrl } from "@/lib/monitoring/analyzers";
+import { WEBSITE_SUITE, extractLinks, normalizeSiteUrl, suiteDbFields } from "@/lib/monitoring/analyzers";
 import { runMonitorsBatch } from "@/lib/monitoring/run-batch";
+import { checkState } from "@/lib/monitoring/state";
 
 const prisma = new PrismaClient();
 
+async function discoverRoutes(url: string): Promise<string[]> {
+  try {
+    const res = await fetch(url, { headers: { "user-agent": "ValiantFirmMonitor/1.0" }, signal: AbortSignal.timeout(12_000) });
+    const html = await res.text();
+    const host = new URL(res.url || url).host;
+    const internal = extractLinks(html, res.url || url, 200).filter((l) => new URL(l).host === host && new URL(l).pathname !== "/");
+    const score = (l: string) => (/contact|quote|estimate|schedule/i.test(l) ? 0 : /service|gutter|repair|install|about/i.test(l) ? 1 : 2);
+    return internal
+      .filter((l) => !/\.(jpg|jpeg|png|webp|gif|svg|pdf|css|js)(\?|$)/i.test(l))
+      .sort((a, b) => score(a) - score(b))
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
+}
+
 async function main() {
-  const url = normalizeSiteUrl(process.argv[2] ?? "");
-  if (!url) throw new Error('Usage: npm run site:add -- https://example.com "Short name"');
-  const label = process.argv[3]?.trim() || new URL(url).host;
+  const args = process.argv.slice(2);
+  const flags = args.filter((a) => a.startsWith("--"));
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--owner" && args[i - 1] !== "--client");
+  const clientIdx = args.indexOf("--client");
+  const clientName = clientIdx !== -1 ? (args[clientIdx + 1] ?? null) : null;
+  const ownerIdx = args.indexOf("--owner");
+  const owner = ownerIdx !== -1 ? (args[ownerIdx + 1] ?? null) : null;
+
+  const url = normalizeSiteUrl(positional[0] ?? "");
+  if (!url) throw new Error('Usage: npm run site:add -- https://example.com "Short name" [--routes] [--owner "Name"]');
+  const label = positional[1]?.trim() || new URL(url).host;
 
   const org = await prisma.organization.findUnique({ where: { slug: "valiant-firm" }, select: { id: true } });
   if (!org) throw new Error("Organization 'valiant-firm' not found — run db:seed first.");
 
-  const existing = await prisma.monitor.findMany({
-    where: { organizationId: org.id, target: url },
-    select: { type: true },
-  });
-  const have = existing.map((e) => e.type as string);
-  const toCreate = WEBSITE_SUITE.filter((s) => have.indexOf(s.type) === -1);
-  await prisma.monitor.createMany({
-    data: toCreate.map((s) => ({
-      organizationId: org.id,
-      name: `${label} — ${s.label}`,
-      type: s.type as MonitorType,
-      target: url,
-      cadenceMinutes: s.cadenceMinutes,
-    })),
-  });
-  console.log(`\n${url}: ${toCreate.length} checks created, ${have.length} already existed.`);
+  const client = clientName
+    ? await prisma.client.findFirst({
+        where: { organizationId: org.id, isDemo: false, businessName: clientName },
+        select: { id: true },
+      })
+    : null;
+  if (clientName && !client) throw new Error(`No live client named "${clientName}"`);
 
-  const monitors = await prisma.monitor.findMany({ where: { organizationId: org.id, target: url } });
-  const summary = await runMonitorsBatch(monitors, 9);
+  const existing = await prisma.monitor.findMany({
+    where: { organizationId: org.id, isDemo: false },
+    select: { type: true, kind: true, target: true },
+  });
+  const have = (type: string, target: string) =>
+    existing.some((e) => (e.kind ?? e.type) === type && e.target === target);
+
+  const rows = WEBSITE_SUITE.filter((s) => !have(s.type, url)).map((s) => ({
+    organizationId: org.id,
+    name: `${label} — ${s.label}`,
+    type: suiteDbFields(s).type as MonitorType,
+    kind: suiteDbFields(s).kind,
+    target: url,
+    cadenceMinutes: s.cadenceMinutes,
+    confirmAfter: s.confirmAfter,
+    environment: "production",
+    owner,
+    clientId: client?.id ?? null,
+  }));
+  if (flags.indexOf("--routes") !== -1) {
+    const routes = await discoverRoutes(url);
+    routes
+      .filter((r) => !have("ROUTE", r))
+      .forEach((r) =>
+        rows.push({
+          organizationId: org.id,
+          name: `${label} — Page ${new URL(r).pathname}`,
+          type: MonitorType.ROUTE,
+          kind: null,
+          target: r,
+          cadenceMinutes: 60,
+          confirmAfter: 2,
+          environment: "production",
+          owner,
+          clientId: client?.id ?? null,
+        }),
+      );
+  }
+  await prisma.monitor.createMany({ data: rows });
+  console.log(`\n${url}: ${rows.length} checks created.`);
+
+  const targets = [url, ...rows.filter((r) => r.type === MonitorType.ROUTE).map((r) => r.target)];
+  const monitors = await prisma.monitor.findMany({
+    where: { organizationId: org.id, isDemo: false, OR: [{ target: url }, { target: { in: targets } }, { name: { startsWith: `${label} — Page` } }] },
+  });
+  const summary = await runMonitorsBatch(monitors, 10, "operator");
   console.log("First cycle:", JSON.stringify(summary));
 
   const after = await prisma.monitor.findMany({
-    where: { organizationId: org.id, target: url },
+    where: { id: { in: monitors.map((m) => m.id) } },
     include: { checks: { orderBy: { observedAt: "desc" }, take: 1 } },
     orderBy: { createdAt: "asc" },
   });
+  const expected: Record<string, string> = {
+    UPTIME: "HTTP status below 400", ROUTE: "HTTP status below 400", TLS: "HTTPS answers below 400", DNS: "at least 1 DNS record",
+    INDEXING: "indexable, robots.txt not blocking", CONTENT_CHANGE: "content unchanged since last check", BROKEN_LINKS: "no 404/410/5xx links",
+    SECURITY: "HTTPS and core security headers", MOBILE: "device-width viewport", PAGE_SPEED: "performance score 50+",
+    SSL_EXPIRY: "certificate valid for more than 14 days", RESPONSE_TIME: "under 3000ms and not 2x slower than usual",
+    SITE_CRAWL: "no broken pages, links or noindex pages", FORM: "lead form present and its handler reachable",
+  };
+  console.log("\n STATE        CHECK                                            EXPECTED → ACTUAL");
   after.forEach((m) => {
-    const mark = m.lastStatus === "ok" ? "PASS" : m.lastStatus === "fail" ? "FAIL" : "N/A ";
-    console.log(` ${mark}  ${m.name.padEnd(48)} ${m.checks[0]?.detail ?? ""}`);
+    const st = checkState({ ...m, type: m.kind ?? m.type }).toUpperCase().padEnd(11);
+    console.log(` ${st}  ${m.name.slice(0, 46).padEnd(46)}  ${expected[m.kind ?? m.type] ?? ""} → ${m.checks[0]?.detail ?? ""}`);
   });
   const open = await prisma.incident.findMany({
-    where: { organizationId: org.id, monitor: { target: url }, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
+    where: { organizationId: org.id, monitorId: { in: monitors.map((m) => m.id) }, status: { in: ["OPEN", "ACKNOWLEDGED"] } },
     select: { title: true, severity: true },
   });
-  console.log(`\nOpen issues for this site: ${open.length}`);
+  console.log(`\nOpen incidents for this site: ${open.length}`);
   open.forEach((i) => console.log(` - [${i.severity}] ${i.title}`));
 }
 

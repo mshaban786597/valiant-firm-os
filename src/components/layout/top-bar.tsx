@@ -3,7 +3,9 @@
 import type { ReactNode } from "react";
 import { signOut, useSession } from "next-auth/react";
 import { Bell, LogOut } from "lucide-react";
+import Link from "next/link";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { ScopeSwitch } from "@/components/layout/scope-switch";
 
 export function TopBar({
   title,
@@ -32,14 +34,15 @@ export function TopBar({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button
-          type="button"
+        <ScopeSwitch />
+        <Link
+          href="/health"
           className="inline-flex h-9 items-center gap-2 rounded-lg border border-card-border bg-card px-3 text-xs font-medium text-muted hover:border-valiant/40 hover:text-foreground"
-          aria-label="Alerts"
+          aria-label="Open alerts"
         >
           <Bell className="h-4 w-4" />
           <span className="hidden sm:inline">Alerts</span>
-        </button>
+        </Link>
         <ThemeToggle />
         <button
           type="button"

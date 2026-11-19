@@ -17,8 +17,14 @@ export function buildFingerprint(
 }
 
 /** Default severity by monitor type (overridable per incident). */
-export function defaultSeverity(type: MonitorType): IncidentSeverity {
+export function defaultSeverity(type: MonitorType | string): IncidentSeverity {
   switch (type) {
+    case "SSL_EXPIRY":
+    case "FORM":
+      return IncidentSeverity.CRITICAL;
+    case "SITE_CRAWL":
+    case "RESPONSE_TIME":
+      return IncidentSeverity.WARNING;
     case MonitorType.UPTIME:
     case MonitorType.LEAD_ROUTE:
     case MonitorType.DNS:

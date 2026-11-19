@@ -4,7 +4,6 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gbpCreateSchema } from "@/lib/schemas/gbp";
-import { sampleGbpInsights } from "@/lib/integrations/sample";
 import { autoCompleteOnboardingItem } from "@/lib/onboarding";
 
 export async function GET() {
@@ -56,7 +55,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const insights = sampleGbpInsights(data.gbpId);
+  // Rating, reviews and posts stay empty until Business Profile is connected.
   const location = await prisma.gbpLocation.create({
     data: {
       organizationId: org.organizationId,
@@ -67,10 +66,6 @@ export async function POST(req: Request) {
       phone: data.phone ?? null,
       website: data.website ?? null,
       address: data.address ?? null,
-      rating: insights.rating,
-      reviewCount: insights.reviewCount,
-      postsLast30Days: insights.postsLast30Days,
-      lastSyncAt: new Date(),
     },
   });
 

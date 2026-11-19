@@ -9,12 +9,14 @@ import { formatCurrency } from "@/lib/utils";
 import { money } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export default async function ClientsPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const clients = await prisma.client.findMany({
-    where: { organizationId },
+    where: { organizationId, isDemo },
     orderBy: { updatedAt: "desc" },
     take: 250,
   });
