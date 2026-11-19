@@ -102,9 +102,9 @@ export const INTEGRATIONS: ToolIntegration[] = [
     id: "gbp",
     name: "Google Business Profile",
     category: "Google Tools",
-    powers: "Profile health, reviews, posts",
-    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GBP_ACCOUNT_ID"],
-    data: "sample",
+    powers: "Profile views, calls, website clicks, directions, reviews",
+    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON"],
+    data: "live",
   },
   // ---- SEO & keyword -----------------------------------------------------
   {

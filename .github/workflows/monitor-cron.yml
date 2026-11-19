@@ -60,6 +60,13 @@ jobs:
               "$APP_URL/api/cron/sync-gsc"
             echo
           done
+          # Google Business Profile: a few profiles per call.
+          for i in 1 2 3; do
+            curl -sS --fail-with-body --max-time 90 \
+              -H "x-cron-secret: $CRON_SECRET" \
+              "$APP_URL/api/cron/sync-gbp"
+            echo
+          done
           # Google Analytics: a few properties per call as well.
           for i in 1 2 3 4; do
             curl -sS --fail-with-body --max-time 90 \

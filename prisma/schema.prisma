@@ -801,6 +801,25 @@ model GbpLocation {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Live sync (Business Profile APIs). Null numbers mean "not read yet", never zero.
+  accountName      String? // accounts/123
+  mapsUri          String?
+  placeId          String?
+  missing          String[]       @default([]) // profile fields that are empty
+  dataSource       String         @default("manual") // manual | live
+  syncState        String         @default("never") // never | ok | error | needs_reauth | quota | forbidden | api_disabled | not_approved
+  lastAttemptAt    DateTime?
+  lastError        String?
+  reviewsState     String?
+  periodStart      DateTime?
+  periodEnd        DateTime?
+  searchViews28d   Int?
+  mapsViews28d     Int?
+  calls28d         Int?
+  websiteClicks28d Int?
+  directions28d    Int?
+  days             GbpMetricDay[]
+
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client?      @relation(fields: [clientId], references: [id])
 
@@ -1717,4 +1736,20 @@ model SiteLead {
   @@index([organizationId, receivedAt])
   @@index([organizationId, status])
   @@index([siteId, receivedAt])
+}
+
+// One day of Business Profile activity for a location.
+model GbpMetricDay {
+  id            String   @id @default(uuid())
+  gbpLocationId String
+  date          DateTime
+  searchViews   Int      @default(0)
+  mapsViews     Int      @default(0)
+  calls         Int      @default(0)
+  websiteClicks Int      @default(0)
+  directions    Int      @default(0)
+
+  location GbpLocation @relation(fields: [gbpLocationId], references: [id], onDelete: Cascade)
+
+  @@unique([gbpLocationId, date])
 }
