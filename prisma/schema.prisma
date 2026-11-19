@@ -137,6 +137,7 @@ model Organization {
   gscProperties            GscProperty[]
   ga4Properties            Ga4Property[]
   sites                    Site[]
+  siteLeads                SiteLead[]
   ga4Metrics               Ga4Metric[]
   googleAdsCampaigns       GoogleAdsCampaign[]
   emailCampaigns           EmailCampaign[]
@@ -409,6 +410,7 @@ model Client {
   gscProperties      GscProperty[]
   ga4Properties      Ga4Property[]
   sites              Site[]
+  siteLeads          SiteLead[]
   googleAdsCampaigns GoogleAdsCampaign[]
   portalTokens       ClientPortalToken[]
   contacts           Contact[]
@@ -1672,12 +1674,47 @@ model Site {
   name           String
   kind           String // client | rank_rent | own
   clientId       String?
+  // Secret part of this site's lead intake address. Null = intake switched off.
+  intakeKey      String?  @unique
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leads        SiteLead[]
 
   @@unique([organizationId, domain])
   @@index([organizationId, kind])
+}
+
+// One enquiry sent from a website's form (a visitor asking for a quote, a call, etc.).
+model SiteLead {
+  id             String   @id @default(uuid())
+  organizationId String
+  siteId         String
+  clientId       String? // the client that owned the site when the lead arrived
+  source         String // form_webhook | email_forward | manual
+  name           String?
+  email          String?
+  phone          String?
+  message        String?  @db.Text
+  pageUrl        String?
+  formName       String?
+  fields         Json? // everything else the form sent
+  status         String   @default("new") // new | contacted | qualified | closed | spam
+  isTest         Boolean  @default(false)
+  notes          String?  @db.Text
+  dedupeKey      String
+  receivedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  site         Site         @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, dedupeKey])
+  @@index([organizationId, receivedAt])
+  @@index([organizationId, status])
+  @@index([siteId, receivedAt])
 }

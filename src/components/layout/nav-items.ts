@@ -4,6 +4,7 @@ import {
   Bot,
   Briefcase,
   Globe,
+  Inbox,
   ClipboardCheck,
   ClipboardList,
   Contact,
@@ -64,6 +65,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/clients", label: "Clients", icon: Briefcase },
       { href: "/sites", label: "Websites", icon: Globe },
+      { href: "/inbox", label: "Leads Inbox", icon: Inbox },
       { href: "/delivery", label: "Delivery", icon: ClipboardList },
       { href: "/monitoring", label: "Monitoring", icon: ShieldAlert },
       { href: "/health", label: "Health", icon: HeartPulse },
