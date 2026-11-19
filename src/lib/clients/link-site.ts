@@ -110,13 +110,22 @@ export async function linkSiteToClient(input: { organizationId: string; clientId
     }
   }
 
-  const mainGa4 = ga4.slice().sort((a, b) => b.sessions28d - a.sessions28d)[0];
-  await prisma.client.update({
+  // The client's own main properties are set only from its main website: a
+  // second website of the same client must not replace them.
+  const client = await prisma.client.findUnique({
     where: { id: input.clientId },
-    data: {
-      ...(gsc[0] ? { gscSiteUrl: gsc[0].siteUrl } : {}),
-      ...(mainGa4 ? { ga4PropertyId: mainGa4.propertyId } : {}),
-    },
+    select: { websiteUrl: true, gscSiteUrl: true, ga4PropertyId: true },
   });
+  const isMainSite = !client?.websiteUrl || siteDomain(client.websiteUrl) === domain;
+  const mainGa4 = ga4.slice().sort((a, b) => b.sessions28d - a.sessions28d)[0];
+  if (isMainSite) {
+    await prisma.client.update({
+      where: { id: input.clientId },
+      data: {
+        ...(gsc[0] ? { gscSiteUrl: gsc[0].siteUrl } : {}),
+        ...(mainGa4 ? { ga4PropertyId: mainGa4.propertyId } : {}),
+      },
+    });
+  }
   return out;
 }

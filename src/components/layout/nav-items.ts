@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bot,
   Briefcase,
+  Globe,
   ClipboardCheck,
   ClipboardList,
   Contact,
@@ -62,6 +63,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Client Operations",
     items: [
       { href: "/clients", label: "Clients", icon: Briefcase },
+      { href: "/sites", label: "Websites", icon: Globe },
       { href: "/delivery", label: "Delivery", icon: ClipboardList },
       { href: "/monitoring", label: "Monitoring", icon: ShieldAlert },
       { href: "/health", label: "Health", icon: HeartPulse },

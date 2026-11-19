@@ -136,6 +136,7 @@ model Organization {
   gbpLocations             GbpLocation[]
   gscProperties            GscProperty[]
   ga4Properties            Ga4Property[]
+  sites                    Site[]
   ga4Metrics               Ga4Metric[]
   googleAdsCampaigns       GoogleAdsCampaign[]
   emailCampaigns           EmailCampaign[]
@@ -407,6 +408,7 @@ model Client {
   gbpLocations       GbpLocation[]
   gscProperties      GscProperty[]
   ga4Properties      Ga4Property[]
+  sites              Site[]
   googleAdsCampaigns GoogleAdsCampaign[]
   portalTokens       ClientPortalToken[]
   contacts           Contact[]
@@ -1660,4 +1662,22 @@ model Ga4Metric {
 
   @@unique([ga4PropertyId, dimension, key, periodStart, periodEnd])
   @@index([organizationId, ga4PropertyId, dimension])
+}
+
+// Every website we look after, and whose it is.
+model Site {
+  id             String   @id @default(uuid())
+  organizationId String
+  domain         String
+  name           String
+  kind           String // client | rank_rent | own
+  clientId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, domain])
+  @@index([organizationId, kind])
 }

@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   "/outreach",
   "/pipeline",
   "/clients",
+  "/sites",
   "/campaigns",
   "/ecommerce",
   "/delivery",
