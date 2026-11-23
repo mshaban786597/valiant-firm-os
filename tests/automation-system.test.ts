@@ -13,12 +13,12 @@ import {
   summarizePageSpeed,
 } from "@/lib/monitoring/analyzers";
 import { channelStatus, formatNotification } from "@/lib/notifications/dispatch";
+import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
 import {
   INTEGRATIONS,
   getIntegration,
   integrationState,
   missingEnv,
-  testIntegration,
 } from "@/lib/integrations/catalog";
 import { buildOutreachDraft } from "@/lib/outreach/draft";
 import { NAV_GROUPS, NAV_ITEMS } from "@/components/layout/nav-items";
@@ -194,6 +194,8 @@ describe("integration catalog", () => {
     expect(integrationState(psi, { PAGESPEED_API_KEY: "k" })).toBe("connected");
   });
   it("never calls a provider when credentials are missing", async () => {
+    expect(hasLiveTest("stripe")).toBe(true);
+    expect(hasLiveTest("ubersuggest")).toBe(false);
     const r = await testIntegration(getIntegration("stripe")!, {});
     expect(r).toEqual({ ok: false, detail: "Missing: STRIPE_SECRET_KEY" });
   });

@@ -21,7 +21,9 @@ export type NotificationEvent =
   | "report_ready"
   | "test";
 
-export type Channel = "email" | "slack" | "telegram";
+import { channelStatus, type Channel } from "@/lib/notifications/channels";
+
+export { channelSetup, channelStatus, type Channel } from "@/lib/notifications/channels";
 
 export interface NotificationInput {
   organizationId: string;
@@ -36,24 +38,6 @@ export interface NotificationInput {
 }
 
 type Env = Record<string, string | undefined>;
-
-export function channelStatus(env: Env = process.env): Record<Channel, boolean> {
-  return {
-    email: !!env.RESEND_API_KEY && !!env.ALERT_EMAIL_TO,
-    slack: !!env.SLACK_WEBHOOK_URL,
-    telegram: !!env.TELEGRAM_BOT_TOKEN && !!env.TELEGRAM_CHAT_ID,
-  };
-}
-
-/** What each channel still needs before it can deliver (env var names only). */
-export function channelSetup(env: Env = process.env): Record<Channel, string[]> {
-  const missing = (keys: string[]) => keys.filter((k) => !env[k]);
-  return {
-    email: missing(["RESEND_API_KEY", "ALERT_EMAIL_TO"]),
-    slack: missing(["SLACK_WEBHOOK_URL"]),
-    telegram: missing(["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]),
-  };
-}
 
 const EVENT_LABEL: Record<NotificationEvent, string> = {
   incident_opened: "Website issue",

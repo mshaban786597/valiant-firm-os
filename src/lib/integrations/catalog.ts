@@ -1,4 +1,7 @@
 /**
+ * Data only: this file is bundled into pages, so it holds no network code.
+ * Connection tests live in catalog-ping.ts (server routes only).
+ *
  * Tool Integration Layer catalog — every tool on the VF automation diagram.
  *
  * Status is derived from the server environment only (never fabricated):
@@ -25,11 +28,6 @@ export type IntegrationCategory =
   | "Sales & Billing"
   | "Monitoring";
 
-export interface PingRequest {
-  url: string;
-  headers?: Record<string, string>;
-}
-
 type Env = Record<string, string | undefined>;
 
 export interface ToolIntegration {
@@ -42,11 +40,7 @@ export interface ToolIntegration {
   /** Alternatively, any ONE of these is enough (used when two credentials both work). */
   envAny?: string[];
   data: "live" | "sample" | "planned" | "imported";
-  /** Builds a cheap, read-only request that proves the credentials work. */
-  ping?: (env: Env) => PingRequest;
 }
-
-const bearer = (token: string | undefined) => ({ authorization: `Bearer ${token}` });
 
 export const INTEGRATIONS: ToolIntegration[] = [
   // ---- Monitoring (built in, live) --------------------------------------
@@ -174,10 +168,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Facebook & Instagram ad performance",
     envVars: ["META_ACCESS_TOKEN", "META_AD_ACCOUNT_ID"],
     data: "planned",
-    ping: (e) => ({
-      url: "https://graph.facebook.com/v19.0/me?fields=id",
-      headers: bearer(e.META_ACCESS_TOKEN),
-    }),
   },
   {
     id: "linkedin-ads",
@@ -186,7 +176,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "LinkedIn campaign performance",
     envVars: ["LINKEDIN_ACCESS_TOKEN"],
     data: "planned",
-    ping: (e) => ({ url: "https://api.linkedin.com/v2/userinfo", headers: bearer(e.LINKEDIN_ACCESS_TOKEN) }),
   },
   {
     id: "tiktok-ads",
@@ -203,11 +192,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Email lists & CRM leads",
     envVars: ["MAILCHIMP_API_KEY"],
     data: "planned",
-    ping: (e) => {
-      const key = e.MAILCHIMP_API_KEY ?? "";
-      const dc = key.split("-")[1] ?? "us1";
-      return { url: `https://${dc}.api.mailchimp.com/3.0/ping`, headers: bearer(key) };
-    },
   },
   // ---- AI ----------------------------------------------------------------
   {
@@ -217,10 +201,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Lead scoring, report summaries, content analysis",
     envVars: ["ANTHROPIC_API_KEY"],
     data: "live",
-    ping: (e) => ({
-      url: "https://api.anthropic.com/v1/models?limit=1",
-      headers: { "x-api-key": e.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
-    }),
   },
   {
     id: "openai",
@@ -229,7 +209,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Primary model for AI scoring & summaries",
     envVars: ["OPENAI_API_KEY"],
     data: "live",
-    ping: (e) => ({ url: "https://api.openai.com/v1/models", headers: bearer(e.OPENAI_API_KEY) }),
   },
   // ---- Notifications -----------------------------------------------------
   {
@@ -239,7 +218,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Incident, lead and approval alerts by email; approved outreach sending",
     envVars: ["RESEND_API_KEY", "ALERT_EMAIL_TO"],
     data: "live",
-    ping: (e) => ({ url: "https://api.resend.com/domains", headers: bearer(e.RESEND_API_KEY) }),
   },
   {
     id: "slack",
@@ -256,7 +234,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Alerts sent by a Telegram bot",
     envVars: ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
     data: "live",
-    ping: (e) => ({ url: `https://api.telegram.org/bot${e.TELEGRAM_BOT_TOKEN}/getMe` }),
   },
   // ---- Ecommerce ---------------------------------------------------------
   {
@@ -266,10 +243,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Products, orders, revenue",
     envVars: ["SHOPIFY_STORE_DOMAIN", "SHOPIFY_ADMIN_TOKEN"],
     data: "sample",
-    ping: (e) => ({
-      url: `https://${e.SHOPIFY_STORE_DOMAIN}/admin/api/2024-10/shop.json`,
-      headers: { "x-shopify-access-token": e.SHOPIFY_ADMIN_TOKEN ?? "" },
-    }),
   },
   {
     id: "amazon",
@@ -303,7 +276,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Booked calls → pipeline",
     envVars: ["CALENDLY_API_TOKEN"],
     data: "planned",
-    ping: (e) => ({ url: "https://api.calendly.com/users/me", headers: bearer(e.CALENDLY_API_TOKEN) }),
   },
   {
     id: "stripe",
@@ -312,7 +284,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     powers: "Payments → invoices",
     envVars: ["STRIPE_SECRET_KEY"],
     data: "planned",
-    ping: (e) => ({ url: "https://api.stripe.com/v1/balance", headers: bearer(e.STRIPE_SECRET_KEY) }),
   },
 ];
 
@@ -337,35 +308,4 @@ export function getIntegration(id: string): ToolIntegration | null {
     if (INTEGRATIONS[i]!.id === id) return INTEGRATIONS[i]!;
   }
   return null;
-}
-
-export interface TestResult {
-  ok: boolean;
-  detail: string;
-}
-
-/** Live credential check. Read-only; never returns secret values. */
-export async function testIntegration(tool: ToolIntegration, env: Env = process.env): Promise<TestResult> {
-  const missing = missingEnv(tool, env);
-  if (missing.length) return { ok: false, detail: `Missing: ${missing.join(", ")}` };
-  if (tool.data === "imported") {
-    return { ok: true, detail: "No key needed. Data is imported through the connector in Claude and stored as dated snapshots; the app does not call this tool itself." };
-  }
-  if (!tool.ping) {
-    return {
-      ok: true,
-      detail: tool.envVars.length
-        ? "Credentials are set (no live test available for this tool yet)"
-        : "Built in — no credentials needed",
-    };
-  }
-  try {
-    const req = tool.ping(env);
-    const res = await fetch(req.url, { headers: req.headers, signal: AbortSignal.timeout(10_000) });
-    return res.ok
-      ? { ok: true, detail: `Connection verified (HTTP ${res.status})` }
-      : { ok: false, detail: `Provider rejected the credentials (HTTP ${res.status})` };
-  } catch (err) {
-    return { ok: false, detail: err instanceof Error ? `Could not reach provider: ${err.name}` : "Could not reach provider" };
-  }
 }

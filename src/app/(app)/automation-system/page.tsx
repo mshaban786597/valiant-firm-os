@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AddWebsiteButton, RunAllButton } from "@/components/automation/site-actions";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
-import { channelStatus } from "@/lib/notifications/dispatch";
+import { channelStatus } from "@/lib/notifications/channels";
 import { AGENTS, DISPATCH_OWNER, agentStatus } from "@/lib/agents/registry";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";

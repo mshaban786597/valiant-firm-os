@@ -3,7 +3,8 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
-import { getIntegration, testIntegration } from "@/lib/integrations/catalog";
+import { getIntegration } from "@/lib/integrations/catalog";
+import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,7 @@ export async function POST(req: Request) {
   const result = await testIntegration(tool);
   const now = new Date();
   // A real provider round-trip happened only when the tool has a ping and it passed.
-  const liveVerified = result.ok && !!tool.ping;
+  const liveVerified = result.ok && hasLiveTest(tool.id);
   await prisma.integrationVerification.upsert({
     where: { organizationId_integrationId: { organizationId: org.organizationId, integrationId: tool.id } },
     create: {
