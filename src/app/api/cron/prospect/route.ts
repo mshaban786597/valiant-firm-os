@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { telemetry } from "@/lib/telemetry";
 import { requireCronSecret } from "@/lib/cron-auth";
-import { googleCseProvider } from "@/lib/prospecting/agent";
-import { nextDueTarget, runProspectTarget } from "@/lib/prospecting/run-target";
+import { nextDueTarget, resolveSerpProvider, runProspectTarget } from "@/lib/prospecting/run-target";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,16 +16,12 @@ export async function GET(req: Request) {
   const denied = requireCronSecret(req);
   if (denied) return denied;
 
-  const provider = googleCseProvider();
-  if (!provider) {
-    return NextResponse.json({
-      success: true,
-      ran: false,
-      reason: "No search provider is connected (GOOGLE_CSE_KEY and GOOGLE_CSE_CX).",
-    });
-  }
   const target = await nextDueTarget();
   if (!target) return NextResponse.json({ success: true, ran: false, reason: "No saved search is due." });
+  const provider = await resolveSerpProvider(target.organizationId);
+  if (!provider) {
+    return NextResponse.json({ success: true, ran: false, reason: "No search provider is connected (connect Ubersuggest on the Integrations page)." });
+  }
 
   const r = await runProspectTarget(target, { provider, maxNew: 8 });
   await telemetry.info({

@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { googleCseProvider, runProspecting, type ProspectingOutcome, type SerpProvider } from "@/lib/prospecting/agent";
 import { queueOutreachDraft } from "@/lib/prospecting/drafts";
+import { ubersuggestSerpProvider, ubersuggestState } from "@/lib/integrations/ubersuggest";
+
+/** The search provider this organization can use right now, or null. */
+export async function resolveSerpProvider(organizationId: string): Promise<SerpProvider | null> {
+  const google = googleCseProvider();
+  if (google) return google;
+  return (await ubersuggestState(organizationId)) === "connected" ? ubersuggestSerpProvider(organizationId) : null;
+}
 
 export interface TargetRunResult extends ProspectingOutcome {
   drafted: number;
@@ -15,7 +23,7 @@ export async function runProspectTarget(
   target: { id: string; organizationId: string; niche: string; keyword: string; city: string; state: string; isDemo: boolean },
   opts: { provider?: SerpProvider | null; requestedBy?: string | null; maxNew?: number; observedAt?: Date } = {},
 ): Promise<TargetRunResult> {
-  const provider = opts.provider === undefined ? googleCseProvider() : opts.provider;
+  const provider = opts.provider === undefined ? await resolveSerpProvider(target.organizationId) : opts.provider;
   const outcome = await runProspecting({
     organizationId: target.organizationId,
     niche: target.niche,

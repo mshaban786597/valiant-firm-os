@@ -16,6 +16,8 @@ export type IntegrationRow = {
   connected: boolean;
   missing: string[];
   data: "live" | "sample" | "planned" | "imported";
+  /** For tools connected by signing in; null for tools connected with a key. */
+  signIn: "connected" | "needs_reauth" | "not_connected" | null;
   lastTestAt: string | null;
   lastTestOk: boolean | null;
   lastTestDetail: string | null;
@@ -78,6 +80,24 @@ export function IntegrationsWorkspace({
     }
   }
 
+  async function disconnect(id: string, name: string) {
+    if (!window.confirm(`Disconnect ${name}? Data already stored is kept.`)) return;
+    setBusy(`off:${id}`);
+    try {
+      const res = await fetch(`/api/integrations/${id}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "disconnect" }),
+      });
+      if (!res.ok) return toast.error(await errorMessageFromResponse(res));
+      toast.success(((await res.json()) as { message: string }).message);
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function sendTestAlert() {
     setBusy("alert");
     try {
@@ -132,6 +152,31 @@ export function IntegrationsWorkspace({
                         </button>
                       ) : null}
                     </div>
+                    {r.signIn ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {r.signIn === "connected" ? (
+                          <button
+                            type="button"
+                            disabled={busy === `off:${r.id}`}
+                            onClick={() => disconnect(r.id, r.name)}
+                            className="rounded-lg border border-card-border px-2.5 py-1 text-xs font-semibold text-red-600 disabled:opacity-50"
+                          >
+                            Disconnect
+                          </button>
+                        ) : canTest ? (
+                          <a href={`/api/integrations/${r.id}/connect`} className="rounded-lg bg-valiant px-2.5 py-1 text-xs font-semibold text-white">
+                            {r.signIn === "needs_reauth" ? "Sign in again" : "Connect"}
+                          </a>
+                        ) : null}
+                        <span className="text-[11px] text-muted">
+                          {r.signIn === "connected"
+                            ? "Signed in. The sign-in is stored encrypted."
+                            : r.signIn === "needs_reauth"
+                              ? "The sign-in expired or was withdrawn."
+                              : `You approve the connection on ${r.name}'s own page.`}
+                        </span>
+                      </div>
+                    ) : null}
                     {!r.connected && r.missing.length ? (
                       <p className="mt-2 break-words text-[11px] text-muted">
                         To connect, set: <span className="font-mono">{r.missing.join(", ")}</span>

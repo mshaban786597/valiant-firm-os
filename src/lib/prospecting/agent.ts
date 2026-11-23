@@ -22,6 +22,8 @@ export interface SerpProvider {
   name: string;
   /** Ranked organic results for a query in a place, best first. */
   search(query: string, location: string): Promise<SerpResult[]>;
+  /** When the results of the last search were collected, if not just now. */
+  collectedAt?: () => Date | null;
 }
 
 type Env = Record<string, string | undefined>;
@@ -139,7 +141,7 @@ export async function runProspecting(input: ProspectingInput): Promise<Prospecti
 
   const fetchSite = input.fetchSite ?? fetchBusinessSite;
   const added: ProspectingOutcome["added"] = [];
-  const observedAt = input.observedAt ?? new Date();
+  const observedAt = input.observedAt ?? input.provider.collectedAt?.() ?? new Date();
 
   for (const r of classified.picked.slice(0, input.maxNew ?? 15)) {
     const home = `https://${r.domain}`;

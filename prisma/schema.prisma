@@ -138,6 +138,7 @@ model Organization {
   ga4Properties            Ga4Property[]
   sites                    Site[]
   siteLeads                SiteLead[]
+  oauthConnections         OAuthConnection[]
   ga4Metrics               Ga4Metric[]
   googleAdsCampaigns       GoogleAdsCampaign[]
   emailCampaigns           EmailCampaign[]
@@ -1752,4 +1753,26 @@ model GbpMetricDay {
   location GbpLocation @relation(fields: [gbpLocationId], references: [id], onDelete: Cascade)
 
   @@unique([gbpLocationId, date])
+}
+
+// A sign-in to an outside tool on the organization's behalf. Tokens are stored encrypted.
+model OAuthConnection {
+  id              String    @id @default(uuid())
+  organizationId  String
+  provider        String // ubersuggest
+  clientId        String
+  redirectUri     String
+  accessTokenEnc  String?   @db.Text
+  refreshTokenEnc String?   @db.Text
+  expiresAt       DateTime?
+  scope           String?
+  status          String    @default("pending") // pending | connected | needs_reauth
+  lastError       String?
+  connectedBy     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
 }

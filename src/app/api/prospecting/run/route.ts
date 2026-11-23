@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
-import { googleCseProvider } from "@/lib/prospecting/agent";
-import { runProspectTarget } from "@/lib/prospecting/run-target";
+import { resolveSerpProvider, runProspectTarget } from "@/lib/prospecting/run-target";
 import { prospectRunSchema } from "@/lib/schemas/prospecting";
 
 export const runtime = "nodejs";
@@ -20,12 +19,12 @@ export async function POST(req: Request) {
   });
   if (!target) return NextResponse.json({ error: "Search not found" }, { status: 404 });
 
-  const provider = googleCseProvider();
+  const provider = await resolveSerpProvider(org.organizationId);
   if (!provider) {
     return NextResponse.json(
       {
         error:
-          "No search provider is connected, so the app cannot run this search by itself. Add GOOGLE_CSE_KEY and GOOGLE_CSE_CX, or import results with scripts/import-prospects.ts.",
+          "No search provider is connected, so the app cannot run this search by itself. Connect Ubersuggest on the Integrations page.",
       },
       { status: 409 },
     );

@@ -7,13 +7,18 @@ import {
 } from "@/components/integrations/integrations-workspace";
 import { INTEGRATIONS, integrationState, missingEnv } from "@/lib/integrations/catalog";
 import { prisma } from "@/lib/prisma";
+import { signedInTools } from "@/lib/integrations/oauth-state";
 import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
-export default async function IntegrationsPage() {
+export default async function IntegrationsPage({ searchParams }: { searchParams?: { ubersuggest?: string; reason?: string } }) {
   const { organizationId } = await requireSessionOrg();
+  const signedIn = await signedInTools(organizationId);
+  const needsReauth = (
+    await prisma.oAuthConnection.findMany({ where: { organizationId, status: "needs_reauth" }, select: { provider: true } })
+  ).map((c) => c.provider);
 
   const verifications = await prisma.integrationVerification.findMany({ where: { organizationId } });
   const verified: Record<string, (typeof verifications)[number]> = {};
@@ -24,9 +29,10 @@ export default async function IntegrationsPage() {
     name: t.name,
     category: t.category,
     powers: t.powers,
-    connected: integrationState(t) === "connected",
+    connected: integrationState(t, process.env, signedIn) === "connected",
     // Env var NAMES only — values never leave the server.
     missing: missingEnv(t),
+    signIn: t.oauth ? (signedIn.indexOf(t.id) !== -1 ? "connected" : needsReauth.indexOf(t.id) !== -1 ? "needs_reauth" : "not_connected") : null,
     data: t.data,
     lastTestAt: verified[t.id]?.lastTestAt?.toISOString() ?? null,
     lastTestOk: verified[t.id]?.lastTestOk ?? null,
@@ -57,6 +63,13 @@ export default async function IntegrationsPage() {
 
   return (
     <PageShell title="Integrations">
+      {searchParams?.ubersuggest === "connected" ? (
+        <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">Ubersuggest is connected.</div>
+      ) : searchParams?.ubersuggest === "failed" ? (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm">
+          Ubersuggest was not connected. {(searchParams.reason ?? "").slice(0, 240)}
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Tools in the system" value={String(rows.length)} />
         <KpiCard

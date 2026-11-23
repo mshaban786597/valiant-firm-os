@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { getIntegration } from "@/lib/integrations/catalog";
 import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
+import { UBERSUGGEST, testUbersuggest } from "@/lib/integrations/ubersuggest";
 
 export const runtime = "nodejs";
 
@@ -24,10 +25,19 @@ export async function POST(req: Request) {
   const tool = getIntegration(parsed.data.id);
   if (!tool) return NextResponse.json({ error: "Unknown integration" }, { status: 404 });
 
-  const result = await testIntegration(tool);
+  let result: { ok: boolean; detail: string };
+  let realCall = hasLiveTest(tool.id);
+  if (tool.id === UBERSUGGEST) {
+    // Signed-in tool: the test is a real call with the stored sign-in.
+    const r = await testUbersuggest(org.organizationId);
+    result = r.ok ? { ok: true, detail: r.data.summary } : { ok: false, detail: r.detail };
+    realCall = true;
+  } else {
+    result = await testIntegration(tool);
+  }
   const now = new Date();
-  // A real provider round-trip happened only when the tool has a ping and it passed.
-  const liveVerified = result.ok && hasLiveTest(tool.id);
+  // A real provider round-trip happened only when a live call was made and it passed.
+  const liveVerified = result.ok && realCall;
   await prisma.integrationVerification.upsert({
     where: { organizationId_integrationId: { organizationId: org.organizationId, integrationId: tool.id } },
     create: {

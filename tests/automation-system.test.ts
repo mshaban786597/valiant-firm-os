@@ -180,10 +180,8 @@ describe("integration catalog", () => {
     expect(integrationState(surfer, { SURFER_API_KEY: "k" })).toBe("connected");
     // Tools we do not use are not listed at all.
     ["ahrefs", "semrush", "moz"].forEach((id) => expect(getIntegration(id)).toBeNull());
-    // Ubersuggest needs no key: its data is imported through the connector in Claude.
-    const uber = getIntegration("ubersuggest")!;
-    expect(uber.data).toBe("imported");
-    expect(integrationState(uber, {})).toBe("connected");
+    // Ubersuggest is connected by signing in, so env alone never connects it (see ubersuggest.test.ts).
+    expect(integrationState(getIntegration("ubersuggest")!, {})).toBe("not_connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);
     expect(integrationState(getIntegration("site-monitor")!, {})).toBe("connected");
     // PageSpeed works with either the service account or its own API key.

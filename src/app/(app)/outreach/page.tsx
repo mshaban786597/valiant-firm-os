@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { LogReplyButton } from "@/components/outreach/log-reply";
 import { LogMeetingButton } from "@/components/outreach/log-meeting";
 import { ProspectingPanel, type TargetRow } from "@/components/outreach/prospecting-panel";
-import { googleCseProvider } from "@/lib/prospecting/agent";
+import { resolveSerpProvider } from "@/lib/prospecting/run-target";
 import { CATEGORY_LABEL } from "@/lib/prospecting/rules";
 import { groupOutreachStats, prospectStage, type StatLead, type StatRow } from "@/lib/prospecting/stats";
 import { prisma } from "@/lib/prisma";
@@ -221,7 +221,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
         {suppressed === 1 ? " is" : "es are"} on the do-not-email list.
       </p>
 
-      <ProspectingPanel targets={targetRows} providerConnected={googleCseProvider() !== null} />
+      <ProspectingPanel targets={targetRows} providerConnected={(await resolveSerpProvider(organizationId)) !== null} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <StatTable

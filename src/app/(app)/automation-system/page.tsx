@@ -5,6 +5,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AddWebsiteButton, RunAllButton } from "@/components/automation/site-actions";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
+import { signedInTools } from "@/lib/integrations/oauth-state";
 import { channelStatus } from "@/lib/notifications/channels";
 import { AGENTS, DISPATCH_OWNER, agentStatus } from "@/lib/agents/registry";
 import { prisma } from "@/lib/prisma";
@@ -68,7 +69,8 @@ export default async function AutomationSystemPage() {
     if (m.lastCheckAt && (!s.lastCheckAt || m.lastCheckAt > s.lastCheckAt)) s.lastCheckAt = m.lastCheckAt;
   });
 
-  const connectedTools = INTEGRATIONS.filter((t) => integrationState(t) === "connected").length;
+  const signedIn = await signedInTools(organizationId);
+  const connectedTools = INTEGRATIONS.filter((t) => integrationState(t, process.env, signedIn) === "connected").length;
   const channels = channelStatus();
   const channelNames = (["email", "slack", "telegram"] as const).filter((c) => channels[c]);
 

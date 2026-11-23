@@ -39,6 +39,8 @@ export interface ToolIntegration {
   envVars: string[];
   /** Alternatively, any ONE of these is enough (used when two credentials both work). */
   envAny?: string[];
+  /** Connected by signing in (state is stored in the database, not in env). */
+  oauth?: boolean;
   data: "live" | "sample" | "planned" | "imported";
 }
 
@@ -109,7 +111,8 @@ export const INTEGRATIONS: ToolIntegration[] = [
     category: "SEO & Keyword Tools",
     powers: "Keywords, traffic estimates, backlinks, search results",
     envVars: [],
-    data: "imported",
+    oauth: true,
+    data: "live",
   },
   {
     id: "alsoasked",
@@ -291,7 +294,9 @@ export type IntegrationState = "connected" | "not_connected";
 
 const isSet = (env: Env, k: string) => !!env[k] && env[k]!.trim() !== "";
 
-export function integrationState(tool: ToolIntegration, env: Env = process.env): IntegrationState {
+export function integrationState(tool: ToolIntegration, env: Env = process.env, signedIn: string[] = []): IntegrationState {
+  // A sign-in tool is connected only when its sign-in is on record.
+  if (tool.oauth) return signedIn.indexOf(tool.id) !== -1 ? "connected" : "not_connected";
   const all = tool.envVars.every((k) => isSet(env, k));
   const any = !tool.envAny || tool.envAny.some((k) => isSet(env, k));
   return all && any ? "connected" : "not_connected";

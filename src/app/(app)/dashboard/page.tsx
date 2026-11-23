@@ -27,6 +27,7 @@ import { getDataScope } from "@/lib/scope";
 import { computeDashboardKpis, settle } from "@/lib/dashboard/kpis";
 import { getMonitoringSummary } from "@/lib/monitoring/summary";
 import { INTEGRATIONS, integrationState } from "@/lib/integrations/catalog";
+import { signedInTools } from "@/lib/integrations/oauth-state";
 import { netAfterTools, summarizeExpenses } from "@/lib/expenses";
 import { can } from "@/lib/permissions";
 
@@ -118,7 +119,8 @@ export default async function DashboardPage() {
   const net = costs ? netAfterTools(kpis.contractedMrr, costs) : null;
 
   const openTasks = tasks.filter((t) => t.status !== TaskStatus.Completed).length;
-  const connectedTools = INTEGRATIONS.filter((t) => integrationState(t) === "connected").length;
+  const signedIn = await signedInTools(organizationId);
+  const connectedTools = INTEGRATIONS.filter((t) => integrationState(t, process.env, signedIn) === "connected").length;
   const unavailable = "Unavailable";
   const demoRecords = demoCounts ? demoCounts[0] + demoCounts[1] : 0;
 
