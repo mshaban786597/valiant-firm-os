@@ -137,3 +137,24 @@ Status: **Fixture verified**. No real email was sent to anyone.
 ## Next executable step
 
 Last passing gate: `npx vitest run` (211 tests). Next: supply the Google service-account key and the BBG property id, then on the SEO page press **Test access** and **Sync**, and reconcile clicks and impressions against Search Console for the same 28-day window and search type.
+
+## Hosting and schedule (2026-11-23)
+
+The app runs at https://app.valiantfirm.net on Hostinger (Node.js 22). Scheduled work is
+run by Hostinger cron jobs on that account, each a single `curl` to a secret-gated endpoint:
+
+| Schedule (UTC) | Endpoint |
+|---|---|
+| every 15 minutes | `/api/cron/run-monitors` |
+| minutes 7, 22, 37, 52 | `/api/cron/process-outreach` |
+| 11:20, 11:35, 11:50 daily | `/api/cron/sync-gsc` |
+| 12:05, 12:20, 12:35, 12:50 daily | `/api/cron/sync-ga4` |
+| 13:10 daily | `/api/cron/sync-gbp` |
+| 13:30 daily | `/api/cron/prospect` |
+
+The GitHub Actions schedule was removed so there is one scheduler. Environment variables
+live in Hostinger (Node.js > Environment variables); changing `CRON_SECRET` there means
+updating the six cron commands too.
+
+Deploy: export the committed code (`git archive HEAD`) to a folder outside AppData and
+deploy that folder; the build runs on the server with one worker (`next.config.mjs`).
