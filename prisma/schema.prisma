@@ -1528,7 +1528,7 @@ model SeoSnapshot {
   id             String   @id @default(uuid())
   organizationId String
   domain         String
-  provider       String // ubersuggest | ahrefs | semrush ...
+  provider       String // ubersuggest
   kind           String // domain_overview | keywords | backlinks
   location       String?
   data           Json

@@ -15,7 +15,7 @@ export interface VisibilitySite {
   keywords: { keyword: string; position: number; volume: number; url?: string; intent?: string }[];
 }
 
-const PROVIDER_LABEL: Record<string, string> = { ubersuggest: "Ubersuggest", ahrefs: "Ahrefs", semrush: "Semrush" };
+const PROVIDER_LABEL: Record<string, string> = { ubersuggest: "Ubersuggest" };
 const num = (n: number | undefined) => (typeof n === "number" ? n.toLocaleString() : "—");
 
 /**

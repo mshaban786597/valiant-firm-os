@@ -168,16 +168,22 @@ describe("integration catalog", () => {
   it("has unique ids and covers the diagram's tool groups", () => {
     const ids = INTEGRATIONS.map((t) => t.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
-    ["gsc", "ga4", "gtm", "google-ads", "ahrefs", "semrush", "ubersuggest", "moz", "surfer", "clearscope",
+    ["gsc", "ga4", "gtm", "google-ads", "ubersuggest", "surfer", "clearscope",
       "marketmuse", "frase", "meta-ads", "linkedin-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
       (id) => expect(getIntegration(id)).not.toBeNull(),
     );
   });
   it("derives status from env only", () => {
-    const ahrefs = getIntegration("ahrefs")!;
-    expect(integrationState(ahrefs, {})).toBe("not_connected");
-    expect(integrationState(ahrefs, { AHREFS_API_KEY: "  " })).toBe("not_connected");
-    expect(integrationState(ahrefs, { AHREFS_API_KEY: "k" })).toBe("connected");
+    const surfer = getIntegration("surfer")!;
+    expect(integrationState(surfer, {})).toBe("not_connected");
+    expect(integrationState(surfer, { SURFER_API_KEY: "  " })).toBe("not_connected");
+    expect(integrationState(surfer, { SURFER_API_KEY: "k" })).toBe("connected");
+    // Tools we do not use are not listed at all.
+    ["ahrefs", "semrush", "moz"].forEach((id) => expect(getIntegration(id)).toBeNull());
+    // Ubersuggest needs no key: its data is imported through the connector in Claude.
+    const uber = getIntegration("ubersuggest")!;
+    expect(uber.data).toBe("imported");
+    expect(integrationState(uber, {})).toBe("connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);
     expect(integrationState(getIntegration("site-monitor")!, {})).toBe("connected");
     // PageSpeed works with either the service account or its own API key.

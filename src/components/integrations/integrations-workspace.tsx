@@ -15,7 +15,7 @@ export type IntegrationRow = {
   powers: string;
   connected: boolean;
   missing: string[];
-  data: "live" | "sample" | "planned";
+  data: "live" | "sample" | "planned" | "imported";
   lastTestAt: string | null;
   lastTestOk: boolean | null;
   lastTestDetail: string | null;
@@ -35,6 +35,7 @@ export type NotificationRow = {
 
 function dataBadge(row: IntegrationRow) {
   if (row.data === "live") return { label: "Supports live data", variant: "info" as const };
+  if (row.data === "imported") return { label: "Imported through Claude", variant: "info" as const };
   if (row.data === "sample") return { label: "No data until connected", variant: "warning" as const };
   return { label: "Connection test only", variant: "neutral" as const };
 }

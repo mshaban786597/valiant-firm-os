@@ -68,7 +68,7 @@ describe("tool cost math", () => {
 describe("expense input + access", () => {
   it("accepts an unpriced planned tool and rejects an inverted range", () => {
     const ok = expenseCreateSchema.safeParse({
-      name: "Ahrefs / Semrush", category: "SEO tools", status: "planned", plannedLowCents: 10000, plannedHighCents: 30000,
+      name: "Ubersuggest", category: "SEO tools", status: "planned", plannedLowCents: 10000, plannedHighCents: 30000,
     });
     expect(ok.success).toBe(true);
     expect(

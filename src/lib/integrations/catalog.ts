@@ -10,6 +10,8 @@
  *  - "sample"   module exists but shows no numbers until its live sync is
  *               wired (nothing is generated)
  *  - "planned"  credential slot + connection test only; no module yet
+ *  - "imported" no API key: data is pulled through the tool's connector in
+ *               Claude and stored as dated snapshots (the app cannot call it)
  */
 
 export type IntegrationCategory =
@@ -39,7 +41,7 @@ export interface ToolIntegration {
   envVars: string[];
   /** Alternatively, any ONE of these is enough (used when two credentials both work). */
   envAny?: string[];
-  data: "live" | "sample" | "planned";
+  data: "live" | "sample" | "planned" | "imported";
   /** Builds a cheap, read-only request that proves the credentials work. */
   ping?: (env: Env) => PingRequest;
 }
@@ -108,43 +110,12 @@ export const INTEGRATIONS: ToolIntegration[] = [
   },
   // ---- SEO & keyword -----------------------------------------------------
   {
-    id: "ahrefs",
-    name: "Ahrefs",
-    category: "SEO & Keyword Tools",
-    powers: "Backlinks, keywords, rank tracking",
-    envVars: ["AHREFS_API_KEY"],
-    data: "planned",
-    ping: (e) => ({
-      url: "https://api.ahrefs.com/v3/subscription-info/limits-and-usage",
-      headers: bearer(e.AHREFS_API_KEY),
-    }),
-  },
-  {
-    id: "semrush",
-    name: "Semrush",
-    category: "SEO & Keyword Tools",
-    powers: "SERP, rank tracking, competitors",
-    envVars: ["SEMRUSH_API_KEY"],
-    data: "planned",
-    ping: (e) => ({
-      url: `https://www.semrush.com/users/countapiunits.html?key=${encodeURIComponent(e.SEMRUSH_API_KEY ?? "")}`,
-    }),
-  },
-  {
     id: "ubersuggest",
     name: "Ubersuggest",
     category: "SEO & Keyword Tools",
-    powers: "Keyword ideas, site audit",
-    envVars: ["UBERSUGGEST_API_KEY"],
-    data: "planned",
-  },
-  {
-    id: "moz",
-    name: "Moz",
-    category: "SEO & Keyword Tools",
-    powers: "Domain authority, link metrics",
-    envVars: ["MOZ_API_TOKEN"],
-    data: "planned",
+    powers: "Keywords, traffic estimates, backlinks, search results",
+    envVars: [],
+    data: "imported",
   },
   {
     id: "alsoasked",
@@ -377,6 +348,9 @@ export interface TestResult {
 export async function testIntegration(tool: ToolIntegration, env: Env = process.env): Promise<TestResult> {
   const missing = missingEnv(tool, env);
   if (missing.length) return { ok: false, detail: `Missing: ${missing.join(", ")}` };
+  if (tool.data === "imported") {
+    return { ok: true, detail: "No key needed. Data is imported through the connector in Claude and stored as dated snapshots; the app does not call this tool itself." };
+  }
   if (!tool.ping) {
     return {
       ok: true,
