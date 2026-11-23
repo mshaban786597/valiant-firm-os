@@ -130,7 +130,7 @@ export default async function LeadsPage({
       {leads.length === 0 ? (
         <EmptyState
           title="No leads yet"
-          description="Create your first lead or run the database seed for demo data."
+          description="Add your first lead to start the list."
         />
       ) : (
       <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">

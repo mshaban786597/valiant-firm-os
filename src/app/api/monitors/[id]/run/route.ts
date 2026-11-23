@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 /**
  * Run a monitor's check now and drive the incident lifecycle.
  *
- * A forced result ({ simulate: "fail" | "ok" }) is only accepted on demo-scope
+ * A forced result ({ simulate: "fail" | "ok" }) is only accepted on fixture
  * (fixture) monitors, so simulated outages can never touch live incidents,
  * tasks or alerts. A re-run inside the check window is recorded as a retry.
  */
@@ -36,7 +36,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (parsed.data.simulate) {
     if (!monitor.isDemo) {
       return NextResponse.json(
-        { error: "Simulated results are only allowed on demo (fixture) checks." },
+        { error: "Simulated results are only allowed on fixture checks." },
         { status: 403 },
       );
     }

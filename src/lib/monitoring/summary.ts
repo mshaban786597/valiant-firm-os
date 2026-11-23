@@ -87,7 +87,7 @@ export async function getMonitoringSummary(
   ]);
 
   return {
-    scope: { isDemo, label: isDemo ? "Demo data" : "Live data", windowHours },
+    scope: { isDemo, label: isDemo ? "Fixture data" : "Live data", windowHours },
     checks: summarizeChecks(
       monitors.map((m) => ({ ...m, type: m.kind ?? m.type })),
       now,

@@ -25,7 +25,7 @@ import { buildFollowUp, draftOptionsFromEnv } from "@/lib/outreach/draft";
  *  - suppression, replies and bookings are rechecked immediately before sending
  *  - an ambiguous provider response becomes `needs_reconcile` and is never
  *    blindly retried; reconciling re-uses the same idempotency key
- *  - demo-scope sends only ever use the test provider
+ *  - sends to fixture leads only ever use the test provider
  */
 
 // ---- providers ---------------------------------------------------------------
@@ -112,7 +112,7 @@ export function recipientAllowed(to: string, env: Record<string, string | undefi
   return list.indexOf("*") !== -1 || list.indexOf(to.trim().toLowerCase()) !== -1;
 }
 
-/** Demo scope → test provider only. Live scope → Resend only when live sending is switched on. */
+/** Fixture leads → test provider only. Real leads → Resend only when live sending is switched on. */
 export function providerFor(
   isDemo: boolean,
   env: Record<string, string | undefined> = process.env,

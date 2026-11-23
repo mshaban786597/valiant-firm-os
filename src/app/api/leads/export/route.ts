@@ -8,7 +8,7 @@ export async function GET() {
   if (!org.ok) return org.response;
 
   const leads = await prisma.lead.findMany({
-    // Exports follow the selected scope; demo fixtures never leave in a live export.
+    // Fixture rows never leave in an export.
     where: { organizationId: org.organizationId, isDemo: getDataScope().isDemo },
     orderBy: { createdAt: "desc" },
     take: 5000,

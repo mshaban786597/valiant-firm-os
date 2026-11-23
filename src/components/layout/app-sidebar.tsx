@@ -9,7 +9,7 @@ import { BrandMark } from "@/components/layout/brand-mark";
 export function AppSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-card-border bg-card/80 backdrop-blur lg:flex lg:flex-col">
+    <aside className="hidden w-64 shrink-0 border-r border-card-border bg-card/80 backdrop-blur lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-card-border px-5">
         <BrandMark size={36} className="shrink-0" />
         <div className="leading-tight">

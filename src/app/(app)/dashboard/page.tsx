@@ -62,7 +62,7 @@ export default async function DashboardPage() {
   ]);
 
   // Secondary sources degrade to "Unavailable" instead of failing the page.
-  const [invoices, reportsDue, automationFailures, aiSpendAgg, rrAgg, monitoring, reviews, meetings, demoCounts] =
+  const [invoices, reportsDue, automationFailures, aiSpendAgg, rrAgg, monitoring, reviews, meetings] =
     await Promise.all([
       settle(
         prisma.invoice.findMany({
@@ -94,12 +94,6 @@ export default async function DashboardPage() {
           where: { ...scoped, status: { in: ["confirmed", "rescheduled"] }, startsAt: { gte: now } },
         }),
       ),
-      settle(
-        Promise.all([
-          prisma.client.count({ where: { organizationId, isDemo: true } }),
-          prisma.lead.count({ where: { organizationId, isDemo: true } }),
-        ]),
-      ),
     ]);
 
   const kpis = computeDashboardKpis({
@@ -122,7 +116,6 @@ export default async function DashboardPage() {
   const signedIn = await signedInTools(organizationId);
   const connectedTools = INTEGRATIONS.filter((t) => integrationState(t, process.env, signedIn) === "connected").length;
   const unavailable = "Unavailable";
-  const demoRecords = demoCounts ? demoCounts[0] + demoCounts[1] : 0;
 
   const attention: { label: string; value: string; hint: string; href: string }[] = [
     {
@@ -226,23 +219,11 @@ export default async function DashboardPage() {
 
   return (
     <PageShell title="Founder Dashboard">
-      {isDemo ? (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-          You are viewing <span className="font-semibold">demo data</span> (pilot fixtures). None of
-          these figures are part of live totals. Switch to Live in the top bar to see real operations.
-        </div>
-      ) : demoRecords > 0 ? (
-        <div className="rounded-xl border border-card-border bg-card p-3 text-xs text-muted">
-          Live data only. {demoRecords} pilot fixture record{demoRecords === 1 ? " is" : "s are"} kept in
-          the demo scope and excluded from every total here.
-        </div>
-      ) : null}
-
       {noRecords ? (
         <div className="rounded-xl border border-card-border bg-card p-4 text-sm">
-          <div className="font-semibold">No {isDemo ? "demo" : "live"} records yet</div>
+          <div className="font-semibold">No records yet</div>
           <p className="mt-1 text-muted">
-            Totals below are zero because nothing has been recorded in this scope.{" "}
+            Totals below are zero because nothing has been recorded yet.{" "}
             <Link className="text-valiant hover:underline" href="/leads">
               Add a lead
             </Link>

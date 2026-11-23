@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   });
   if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   if (parsed.data.calendarSource === "test_calendar" && !lead.isDemo) {
-    return NextResponse.json({ error: "The test calendar can only be used with demo leads." }, { status: 403 });
+    return NextResponse.json({ error: "The test calendar can only be used with fixture leads." }, { status: 403 });
   }
 
   const r = await recordMeetingEvent({

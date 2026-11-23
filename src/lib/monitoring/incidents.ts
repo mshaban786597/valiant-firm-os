@@ -24,7 +24,7 @@ export interface CheckResult {
  *  - scheduled  the cron tick, when the check was due
  *  - manual     an operator ran a check that was due
  *  - retry      a re-run inside the same check window (not a fresh observation)
- *  - simulated  a forced result on a fixture monitor (demo scope only)
+ *  - simulated  a forced result on a fixture monitor (fixtures only)
  */
 export type CheckTrigger = "scheduled" | "manual" | "retry" | "simulated";
 

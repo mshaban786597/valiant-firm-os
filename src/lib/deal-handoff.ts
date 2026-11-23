@@ -30,7 +30,7 @@ export interface DealHandoffInput {
     clientId: string | null;
   };
   lead?: { email: string | null; phone: string | null; websiteUrl: string | null } | null;
-  /** Demo-scope deals create demo-scope clients. */
+  /** A fixture deal creates a fixture client. */
   isDemo?: boolean;
 }
 

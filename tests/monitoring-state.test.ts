@@ -10,7 +10,7 @@ import {
   type CheckLike,
 } from "@/lib/monitoring/state";
 import { computeDashboardKpis, settle } from "@/lib/dashboard/kpis";
-import { scopeFromValue } from "@/lib/scope";
+import { getDataScope } from "@/lib/scope";
 
 const now = new Date("2026-11-17T12:00:00Z");
 const mins = (n: number) => new Date(now.getTime() - n * 60_000);
@@ -155,9 +155,7 @@ describe("dashboard KPIs", () => {
 });
 
 describe("data scope", () => {
-  it("defaults to live and only switches on an explicit demo value", () => {
-    expect(scopeFromValue(undefined)).toMatchObject({ env: "live", isDemo: false });
-    expect(scopeFromValue("anything")).toMatchObject({ env: "live", isDemo: false });
-    expect(scopeFromValue("demo")).toMatchObject({ env: "demo", isDemo: true, label: "Demo data" });
+  it("is always live: there is no second scope to switch to", () => {
+    expect(getDataScope()).toEqual({ env: "live", isDemo: false, label: "Live data" });
   });
 });

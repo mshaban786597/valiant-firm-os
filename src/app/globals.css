@@ -33,6 +33,25 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+/* A grid cell grows to fit its widest child (a table, a long address) unless it
+   is allowed to shrink, which pushed whole pages wider than a phone screen.
+   Let cells shrink so the wide child scrolls inside its own box instead. */
+@layer base {
+  .grid > * {
+    min-width: 0;
+  }
+}
+
+/* Phones zoom the whole page when a field's text is under 16px. Keep fields at
+   16px on small screens so tapping one never zooms. */
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

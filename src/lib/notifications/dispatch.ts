@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
  * (bot). Each channel is env-gated.
  *
  * Delivery states (never inflated):
- *  - skipped  nothing was attempted (channel not configured, or demo scope)
+ *  - skipped  nothing was attempted (channel not configured, or a fixture record)
  *  - sent     the provider accepted the message (its reference is stored when
  *             it returns one). None of these providers confirm final delivery.
  *  - failed   the attempt was made and the provider rejected it / was unreachable
@@ -33,7 +33,7 @@ export interface NotificationInput {
   severity?: "info" | "warning" | "critical";
   /** Deep link path inside the app, e.g. "/monitoring". */
   path?: string;
-  /** Demo-scope events are logged but never leave the app. */
+  /** Events on fixture records are logged but never leave the app. */
   isDemo?: boolean;
 }
 
@@ -134,7 +134,7 @@ export async function notify(input: NotificationInput, env: Env = process.env): 
   const results = await Promise.all(
     channels.map(async (channel): Promise<NotifyResult> => {
       if (input.isDemo) {
-        return { channel, status: "skipped", error: "Demo scope: external delivery is disabled" };
+        return { channel, status: "skipped", error: "Fixture record: external delivery is disabled" };
       }
       if (!configured[channel]) return { channel, status: "skipped", error: "Channel not configured" };
       try {
