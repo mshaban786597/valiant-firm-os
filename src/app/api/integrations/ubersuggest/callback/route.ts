@@ -7,6 +7,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { open, seal } from "@/lib/crypto/seal";
 import { UBERSUGGEST_MCP, exchangeCode } from "@/lib/integrations/mcp-oauth";
 import { UBERSUGGEST } from "@/lib/integrations/ubersuggest";
+import { publicOrigin } from "@/lib/public-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ const same = (a: string, b: string) => {
 /** Ubersuggest sends the person back here after they approve (or refuse). */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const origin = url.origin;
+  const origin = publicOrigin(req);
   const done = (query: string) => {
     const res = NextResponse.redirect(`${origin}/integrations?${query}`);
     res.cookies.set(OAUTH_COOKIE, "", { path: "/api/integrations/ubersuggest", maxAge: 0 });

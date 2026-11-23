@@ -5,6 +5,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { seal } from "@/lib/crypto/seal";
 import { UBERSUGGEST_MCP, authorizeUrl, newState, pkcePair, registerClient } from "@/lib/integrations/mcp-oauth";
 import { UBERSUGGEST } from "@/lib/integrations/ubersuggest";
+import { publicOrigin } from "@/lib/public-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,8 @@ export async function GET(req: Request) {
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 
-  const origin = new URL(req.url).origin;
+  // The address the browser must come back to (not the internal listen address behind a proxy).
+  const origin = publicOrigin(req);
   const redirectUri = `${origin}/api/integrations/ubersuggest/callback`;
   const back = (reason: string) => NextResponse.redirect(`${origin}/integrations?ubersuggest=failed&reason=${encodeURIComponent(reason)}`);
 
