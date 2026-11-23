@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Outside Vercel (for example shared hosting) a build has few processes and
+  // little memory to spare: collect page data with one worker instead of one
+  // per CPU, or the host kills the build.
+  ...(process.env.VERCEL ? {} : { experimental: { cpus: 1 } }),
   async headers() {
     return [
       {
