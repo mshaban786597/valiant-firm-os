@@ -32,11 +32,11 @@ const SEND_BADGE: Record<string, { label: string; variant: "success" | "warning"
 function StatTable({ title, rows, label, hrefFor }: { title: string; rows: StatRow[]; label: (k: string) => string; hrefFor: (k: string) => string }) {
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold">{title}</h2>
+      <h2 className="section-title">{title}</h2>
       {rows.length === 0 ? (
         <EmptyState title="Nothing to show yet" description="Results appear here once prospects are added." />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>
@@ -240,7 +240,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
 
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">
+          <h2 className="section-title">
             Prospects
             {categoryFilter ? ` · ${CATEGORY_LABEL[categoryFilter] ?? categoryFilter}` : ""}
             {nicheFilter ? ` · ${nicheFilter}` : ""}
@@ -257,7 +257,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
             description="Prospects appear after the prospecting agent runs a saved search, or when an email is drafted for a lead."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -297,7 +297,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">
+        <h2 className="section-title">
           Emails <span className="font-normal text-muted">· {openedSends} opened of the {sends.length} shown</span>
         </h2>
         {sends.length === 0 ? (
@@ -306,7 +306,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
             description="Draft an email from Review & Approvals. It is scheduled only after approval."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -360,13 +360,13 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold">Replies</h2>
+          <h2 className="section-title">Replies</h2>
           {replies.length === 0 ? (
             <EmptyState title="No replies logged" description="Use Log a reply when a prospect answers." />
           ) : (
             <div className="space-y-2">
               {replies.map((r) => (
-                <div key={r.id} className="rounded-xl border border-card-border bg-card p-3 text-sm shadow-sm">
+                <div key={r.id} className="rounded-xl border border-card-border bg-card p-3 text-sm shadow-card">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-semibold">{r.lead.businessName}</div>
                     <div className="flex gap-1">
@@ -386,7 +386,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold">Meetings</h2>
+          <h2 className="section-title">Meetings</h2>
           {meetings.length === 0 ? (
             <EmptyState
               title="No meetings recorded"
@@ -395,7 +395,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
           ) : (
             <div className="space-y-2">
               {meetings.map((m) => (
-                <div key={m.id} className="rounded-xl border border-card-border bg-card p-3 text-sm shadow-sm">
+                <div key={m.id} className="rounded-xl border border-card-border bg-card p-3 text-sm shadow-card">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="font-semibold">{m.lead?.businessName ?? "Unlinked"}</div>
                     <StatusBadge
@@ -414,11 +414,11 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Outreach queue</h2>
+        <h2 className="section-title">Outreach queue</h2>
         {queue.length === 0 ? (
           <EmptyState title="Queue is empty" description="Leads scoring 65+ or marked for outreach appear here." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>

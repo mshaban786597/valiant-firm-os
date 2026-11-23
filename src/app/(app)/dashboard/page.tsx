@@ -17,7 +17,9 @@ import {
   ServiceRevenueBar,
   TasksCompletionChart,
 } from "@/components/charts/dashboard-charts";
-import { KpiCard, KpiCardAccent } from "@/components/dashboard/kpi-card";
+import { ArrowUpRight } from "lucide-react";
+import { IconChip, KpiCard, KpiCardAccent } from "@/components/dashboard/kpi-card";
+import { metricVisual } from "@/components/ui/metric-visual";
 import { ReconcileStrip } from "@/components/monitoring/reconcile-strip";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
@@ -241,17 +243,21 @@ export default async function DashboardPage() {
       ) : null}
 
       <section className="space-y-2">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Needs attention</h2>
+        <h2 className="section-title">Needs attention</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
           {attention.map((a) => (
             <Link
               key={a.label}
               href={a.href}
-              className="rounded-xl border border-card-border bg-card p-3 shadow-sm transition-colors hover:border-valiant/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-valiant/50"
+              className="group rounded-xl border border-card-border bg-card p-3 shadow-card transition hover:-translate-y-0.5 hover:border-valiant/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-valiant/50"
             >
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{a.label}</div>
-              <div className="mt-1 text-xl font-semibold">{a.value}</div>
-              <div className="mt-0.5 text-[11px] text-muted">{a.hint}</div>
+              <div className="flex items-center justify-between gap-2">
+                <IconChip icon={metricVisual(a.label).icon} tone={metricVisual(a.label).tone} size="sm" />
+                <ArrowUpRight className="h-4 w-4 text-muted opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+              </div>
+              <div className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{a.value}</div>
+              <div className="text-xs font-medium text-foreground">{a.label}</div>
+              <div className="mt-0.5 text-[11px] leading-snug text-muted">{a.hint}</div>
             </Link>
           ))}
         </div>

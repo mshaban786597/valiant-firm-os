@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
+import { Search } from "lucide-react";
 
 export interface Column<T> {
   key: string;
@@ -81,18 +82,22 @@ export function DataTable<T>({
   return (
     <div className="space-y-3">
       {searchable ? (
-        <input
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setPage(0);
-          }}
-          placeholder={searchPlaceholder}
-          className="w-full max-w-xs rounded-lg border border-card-border bg-background px-3 py-2 text-sm outline-none"
-        />
+        <div className="relative w-full max-w-xs">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+          <input
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setPage(0);
+            }}
+            placeholder={searchPlaceholder}
+            aria-label="Filter rows"
+            className="w-full rounded-lg border border-card-border bg-card py-2 pl-9 pr-3 text-sm outline-none ring-valiant/30 placeholder:text-muted focus:border-valiant/40 focus:ring-2"
+          />
+        </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -100,7 +105,7 @@ export function DataTable<T>({
                 <th
                   key={c.key}
                   onClick={() => toggleSort(c)}
-                  className={`px-4 py-3 ${c.sortable === false ? "" : "cursor-pointer select-none"} ${c.className ?? ""}`}
+                  className={`whitespace-nowrap px-4 py-3 ${c.sortable === false ? "" : "cursor-pointer select-none hover:text-foreground"} ${c.className ?? ""}`}
                 >
                   {c.header}
                   {sortKey === c.key ? (sortDir === "asc" ? " ▲" : " ▼") : ""}

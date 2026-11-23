@@ -62,7 +62,7 @@ export default async function StoreDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-sm font-semibold">Top products</h2>
+          <h2 className="section-title mb-2">Top products</h2>
           <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
@@ -88,7 +88,7 @@ export default async function StoreDetailPage({
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-semibold">Recent orders</h2>
+          <h2 className="section-title mb-2">Recent orders</h2>
           <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">

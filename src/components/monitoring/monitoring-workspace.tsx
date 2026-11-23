@@ -147,11 +147,11 @@ export function MonitoringWorkspace({
 
       {/* Open incidents */}
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold">Open incidents</h2>
+        <h2 className="section-title">Open incidents</h2>
         {incidents.length === 0 ? (
           <EmptyState title={emptyIncidents.title} description={emptyIncidents.description} />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -197,7 +197,7 @@ export function MonitoringWorkspace({
       {/* Checks */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Checks</h2>
+          <h2 className="section-title">Checks</h2>
           {canWrite ? (
             <div className="flex flex-wrap justify-end gap-2">
               <RunAllButton label="Run all checks" />
@@ -211,7 +211,7 @@ export function MonitoringWorkspace({
         {monitors.length === 0 ? (
           <EmptyState title="No checks yet" description="Add a website to start uptime, speed, security, indexing, broken link and content checks." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>

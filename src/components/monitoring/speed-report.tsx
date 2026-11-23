@@ -27,13 +27,13 @@ export function SpeedReport({ rows }: { rows: SpeedRow[] }) {
   return (
     <section className="space-y-2">
       <div>
-        <h2 className="text-sm font-semibold">Page speed and why</h2>
+        <h2 className="section-title">Page speed and why</h2>
         <p className="text-xs text-muted">
           Google PageSpeed lab test on a simulated mid-range phone and slow 4G, so it is stricter than most real
           visits. Slow = score under 50, or the largest element takes over 4 seconds, or layout shift over 0.25.
         </p>
       </div>
-      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>

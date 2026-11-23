@@ -67,7 +67,7 @@ export function ProspectingPanel({ targets, providerConnected }: { targets: Targ
   return (
     <section className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Prospecting agent</h2>
+        <h2 className="section-title">Prospecting agent</h2>
         {canWrite ? (
           <button type="button" onClick={() => setOpen(true)} className="rounded-lg border border-card-border px-3 py-1.5 text-xs font-semibold">
             Add a search
@@ -87,7 +87,7 @@ export function ProspectingPanel({ targets, providerConnected }: { targets: Targ
           No searches saved. Add one, for example niche “Gutters”, search “gutter installation”, city “Tallahassee”, state “FL”.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>

@@ -130,7 +130,7 @@ export function ExpensesWorkspace({ expenses }: { expenses: ExpenseRow[] }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Tools and subscriptions</h2>
+        <h2 className="section-title">Tools and subscriptions</h2>
         {canWrite ? (
           <button
             type="button"
@@ -148,7 +148,7 @@ export function ExpensesWorkspace({ expenses }: { expenses: ExpenseRow[] }) {
           description="Add each tool or subscription with what you actually pay, so net profit is real."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>

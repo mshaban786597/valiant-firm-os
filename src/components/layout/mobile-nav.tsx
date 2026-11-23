@@ -62,7 +62,7 @@ export function MobileNav() {
 
       {/* Full menu (all modules) */}
       {open ? (
-        <nav className="fixed inset-x-0 bottom-0 top-14 z-50 overflow-y-auto overscroll-contain bg-card p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <nav className="fixed inset-x-0 bottom-0 top-14 z-50 overflow-y-auto overscroll-contain bg-surface p-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="space-y-4">
             {NAV_GROUPS.map((group) => (
               <div key={group.title}>
@@ -85,7 +85,7 @@ export function MobileNav() {
                             : "border-card-border bg-background text-muted",
                         )}
                       >
-                        <Icon className="h-4 w-4 shrink-0 opacity-90" />
+                        <Icon className={cn("h-[18px] w-[18px] shrink-0", active ? "text-valiant dark:text-red-300" : "opacity-90")} />
                         <span className="min-w-0 leading-tight">{label}</span>
                       </Link>
                     );

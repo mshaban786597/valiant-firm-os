@@ -93,7 +93,7 @@ export function ApprovalsWorkspace({
     <div className="space-y-6">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Waiting for review</h2>
+          <h2 className="section-title">Waiting for review</h2>
           {canRequest ? (
             <div className="flex gap-2">
               <button
@@ -121,7 +121,7 @@ export function ApprovalsWorkspace({
         ) : (
           <div className="space-y-3">
             {pending.map((a) => (
-              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold">{a.title}</div>
@@ -161,11 +161,11 @@ export function ApprovalsWorkspace({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold">Decided</h2>
+        <h2 className="section-title">Decided</h2>
         {history.length === 0 ? (
           <EmptyState title="No decisions yet" description="Approved and rejected requests are kept here." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>

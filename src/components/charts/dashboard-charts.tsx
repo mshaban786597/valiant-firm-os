@@ -17,6 +17,9 @@ import {
   YAxis,
 } from "recharts";
 
+import { IconChip } from "@/components/dashboard/kpi-card";
+import { metricVisual } from "@/components/ui/metric-visual";
+
 const PIE_COLORS = ["#D30404", "#2563eb", "#f97316", "#10b981", "#a855f7", "#64748b"];
 
 export function ChartCard({
@@ -27,9 +30,10 @@ export function ChartCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
-      <div className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-muted">
-        {title}
+    <div className="rounded-xl border border-card-border bg-card p-4 shadow-card">
+      <div className="mb-3 flex items-center gap-2.5">
+        <IconChip icon={metricVisual(title).icon} tone={metricVisual(title).tone} size="sm" />
+        <div className="text-sm font-semibold text-foreground">{title}</div>
       </div>
       <div className="h-[260px] w-full">{children}</div>
     </div>

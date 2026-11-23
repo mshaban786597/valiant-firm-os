@@ -78,7 +78,7 @@ export function GscWorkspace({
           description="Add the exact Search Console property (for example sc-domain:example.com or https://example.com/), then test access and sync."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>

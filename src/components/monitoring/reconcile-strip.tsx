@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { MonitoringSummary } from "@/lib/monitoring/summary";
 import { passRateLabel, uptimeLabel } from "@/lib/monitoring/state";
+import { ShieldCheck } from "lucide-react";
+import { IconChip } from "@/components/dashboard/kpi-card";
+import { metricVisual } from "@/components/ui/metric-visual";
 
 /**
  * The same monitoring numbers on every page that shows them (Dashboard,
@@ -52,9 +55,12 @@ export function ReconcileStrip({ summary, focus }: { summary: MonitoringSummary;
   ];
 
   return (
-    <section className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+    <section className="rounded-xl border border-card-border bg-card p-4 shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Monitoring status</h2>
+        <h2 className="flex items-center gap-2.5 text-sm font-semibold text-foreground">
+          <IconChip icon={ShieldCheck} tone="money" size="sm" />
+          Monitoring status
+        </h2>
         <span className="text-[11px] text-muted">
           Scope: {summary.scope.label} · all sites and environments · window {summary.scope.windowHours}h
         </span>
@@ -68,8 +74,11 @@ export function ReconcileStrip({ summary, focus }: { summary: MonitoringSummary;
               focus === i.key ? "border-valiant/40 bg-valiant-soft" : "border-card-border bg-background"
             }`}
           >
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted">{i.label}</div>
-            <div className="mt-1 text-xl font-semibold">{i.value}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-[11px] font-semibold uppercase leading-snug tracking-wide text-muted">{i.label}</div>
+              <IconChip icon={metricVisual(i.label).icon} tone={metricVisual(i.label).tone} size="sm" />
+            </div>
+            <div className="mt-1 text-xl font-semibold tabular-nums">{i.value}</div>
             <div className="mt-0.5 text-[11px] leading-snug text-muted">{i.hint}</div>
           </Link>
         ))}

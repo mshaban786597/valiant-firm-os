@@ -26,7 +26,7 @@ export function VisibilityEstimates({ sites }: { sites: VisibilitySite[] }) {
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-sm font-semibold">Search visibility estimates</h2>
+        <h2 className="section-title">Search visibility estimates</h2>
         <p className="text-xs text-muted">
           Estimated by a third-party tool from its own keyword database. These are not Search Console
           figures and can differ from them.
@@ -38,7 +38,7 @@ export function VisibilityEstimates({ sites }: { sites: VisibilitySite[] }) {
         </div>
       ) : (
         sites.map((s) => (
-          <div key={s.domain} className="space-y-3 rounded-xl border border-card-border bg-card p-4 shadow-sm">
+          <div key={s.domain} className="space-y-3 rounded-xl border border-card-border bg-card p-4 shadow-card">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div className="font-semibold">{s.domain}</div>
               <div className="text-xs text-muted">

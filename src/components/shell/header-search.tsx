@@ -177,7 +177,7 @@ export function HeaderSearch({ className }: { className?: string }) {
         <div
           id={listId}
           role="listbox"
-          className="absolute inset-x-2 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-xl border border-card-border bg-card p-1 shadow-xl lg:inset-x-auto lg:right-0 lg:mt-2 lg:w-[26rem]"
+          className="absolute inset-x-2 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-xl border border-card-border bg-surface p-1 shadow-xl lg:inset-x-auto lg:right-0 lg:mt-2 lg:w-[26rem]"
         >
           {rows.map((row, i) => (
             <div key={row.key}>

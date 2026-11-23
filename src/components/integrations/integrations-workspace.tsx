@@ -119,7 +119,7 @@ export function IntegrationsWorkspace({
     <div className="space-y-8">
       {categories.map((cat) => (
         <section key={cat} className="space-y-2">
-          <h2 className="text-sm font-semibold">{cat}</h2>
+          <h2 className="section-title">{cat}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rows
               .filter((r) => r.category === cat)
@@ -127,7 +127,7 @@ export function IntegrationsWorkspace({
                 const badge = dataBadge(r);
                 const result = results[r.id];
                 return (
-                  <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+                  <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-semibold">{r.name}</div>
                       <StatusBadge
@@ -204,7 +204,7 @@ export function IntegrationsWorkspace({
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Recent alerts</h2>
+          <h2 className="section-title">Recent alerts</h2>
           {canAlert ? (
             <button
               type="button"
@@ -222,7 +222,7 @@ export function IntegrationsWorkspace({
             description="Alerts for website issues, new leads and approvals are listed here with what was actually delivered."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>

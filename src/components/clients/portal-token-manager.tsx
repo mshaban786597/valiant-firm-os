@@ -45,7 +45,7 @@ export function PortalTokenManager({ clientId }: { clientId: string }) {
     <div className="rounded-xl border border-card-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold">Share with client</h3>
+          <h3 className="section-title">Share with client</h3>
           <p className="text-xs text-muted">
             Generate a read-only link the client can open without an account.
           </p>

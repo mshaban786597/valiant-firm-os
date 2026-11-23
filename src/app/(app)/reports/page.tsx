@@ -55,7 +55,7 @@ export default async function ReportsPage() {
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Incident reports</h2>
+        <h2 className="section-title">Incident reports</h2>
         {incidentReports.length === 0 ? (
           <div className="rounded-xl border border-card-border bg-card p-4 text-sm text-muted">
             No incident reports in {scope.label.toLowerCase()} yet. One is created from a resolved
@@ -71,7 +71,7 @@ export default async function ReportsPage() {
                 outstanding?: string[];
               } | null;
               return (
-                <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+                <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <div className="font-semibold">{r.client.businessName}</div>
@@ -100,7 +100,7 @@ export default async function ReportsPage() {
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Monthly reports</h2>
+        <h2 className="section-title">Monthly reports</h2>
         <ReportsWorkspace reports={rows} clients={clients} />
       </section>
     </PageShell>

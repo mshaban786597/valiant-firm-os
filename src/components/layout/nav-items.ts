@@ -110,6 +110,13 @@ export const NAV_ITEMS: NavItem[] = NAV_GROUPS.reduce<NavItem[]>(
   [],
 );
 
+/** The nav entry a page belongs to (the longest matching address), for its icon. */
+export function navItemFor(pathname: string): NavItem | undefined {
+  return NAV_ITEMS.filter((n) => pathname === n.href || pathname.startsWith(`${n.href}/`)).sort(
+    (a, b) => b.href.length - a.href.length,
+  )[0];
+}
+
 /** True when `pathname` is the given nav href or a nested route under it. */
 export function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || (href !== "/dashboard" && pathname.startsWith(`${href}/`));

@@ -110,7 +110,7 @@ export function IntakePanel({ sites }: { sites: IntakeSite[] }) {
 
   const btn = "rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40";
   return (
-    <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
       <table className="w-full border-collapse text-sm">
         <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
           <tr>

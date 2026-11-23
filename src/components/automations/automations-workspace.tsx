@@ -53,7 +53,7 @@ export function AutomationsWorkspace({ initial }: { initial: AutomationRow[] }) 
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {items.map((log) => (
-          <div key={log.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+          <div key={log.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold">{log.name}</div>

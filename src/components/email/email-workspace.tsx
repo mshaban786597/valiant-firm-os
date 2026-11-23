@@ -117,7 +117,7 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold">{c.name}</h3>
+                      <h3 className="section-title">{c.name}</h3>
                       <StatusBadge label={c.status} variant={statusVariant(c.status)} />
                     </div>
                     <p className="mt-0.5 text-xs text-muted">{c.subject}</p>

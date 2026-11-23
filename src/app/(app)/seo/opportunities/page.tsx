@@ -137,8 +137,8 @@ export default async function SeoOpportunitiesPage({
           </div>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold">Pages to work on first</h2>
-            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+            <h2 className="section-title">Pages to work on first</h2>
+            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                   <tr>
@@ -176,8 +176,8 @@ export default async function SeoOpportunitiesPage({
           </section>
 
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold">Queries by opportunity</h2>
-            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+            <h2 className="section-title">Queries by opportunity</h2>
+            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                   <tr>
@@ -219,10 +219,10 @@ export default async function SeoOpportunitiesPage({
 
           {gaps.length ? (
             <section className="space-y-2">
-              <h2 className="text-sm font-semibold">
+              <h2 className="section-title">
                 Keywords {provider} lists that Search Console did not report this period
               </h2>
-              <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+              <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
                 <table className="w-full border-collapse text-sm">
                   <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                     <tr>

@@ -31,11 +31,11 @@ function Change({ current, previous }: { current: number; previous: number | nul
 function Breakdown({ title, rows, total }: { title: string; rows: { key: string; sessions: number; users: number; keyEvents: number }[]; total: number }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
+      <h3 className="section-title">{title}</h3>
       {rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-card-border bg-card p-4 text-xs text-muted">No sessions in this period.</div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>
@@ -141,8 +141,8 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
           ) : null}
 
           <section className="space-y-2">
-            <h2 className="text-sm font-semibold">Properties</h2>
-            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+            <h2 className="section-title">Properties</h2>
+            <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                   <tr>
@@ -206,7 +206,7 @@ export default async function AnalyticsPage({ searchParams }: { searchParams?: {
 
           {selected && selected.syncState === "ok" ? (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold">
+              <h2 className="section-title">
                 {selected.displayName}{" "}
                 <span className="font-normal text-muted">
                   · {day(selected.periodStart)} to {day(selected.periodEnd)}
