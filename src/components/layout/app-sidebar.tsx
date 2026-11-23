@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS, isActivePath } from "@/components/layout/nav-items";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 export function AppSidebar() {
   const pathname = usePathname();
   return (
     <aside className="hidden w-64 shrink-0 border-r border-card-border bg-card/80 backdrop-blur lg:flex lg:flex-col">
       <div className="flex h-16 items-center gap-2 border-b border-card-border px-5">
-        <div className="h-8 w-8 rounded-lg bg-valiant shadow-[0_0_24px_rgba(211,4,4,0.35)]" />
+        <BrandMark size={36} className="shrink-0" />
         <div className="leading-tight">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
             Valiant Firm

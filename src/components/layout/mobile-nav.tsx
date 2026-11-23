@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -31,7 +32,7 @@ export function MobileNav() {
       {/* Top bar */}
       <div className="flex h-14 items-center justify-between border-b border-card-border bg-card/90 px-4 backdrop-blur">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg bg-valiant shadow-[0_0_18px_rgba(211,4,4,0.35)]" />
+          <BrandMark size={30} className="shrink-0" />
           <div className="leading-tight">
             <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted">
               Valiant Firm

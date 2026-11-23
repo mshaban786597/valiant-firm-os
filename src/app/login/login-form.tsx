@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -55,7 +56,7 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md rounded-2xl border border-card-border bg-card p-8 shadow-shell dark:shadow-shell-dark">
         <div className="mb-8 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-valiant shadow-[0_0_30px_rgba(211,4,4,0.35)]" />
+          <BrandMark size={52} className="shrink-0" />
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
               Valiant Firm
