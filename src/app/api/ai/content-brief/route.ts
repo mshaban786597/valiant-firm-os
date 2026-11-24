@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { CONTENT_BRIEF_SYSTEM } from "@/lib/ai/prompts";
 import { aiContentBriefJson } from "@/lib/ai/llm-json";
+import { CONTENT_BRIEF_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { fallbackContentBrief } from "@/lib/ai/fallbacks";
 import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   const ai = await aiContentBriefJson(
     CONTENT_BRIEF_SYSTEM,
     JSON.stringify(parsed.data) +
-      `\n\nReturn JSON keys: search_intent, target_keyword, secondary_keywords (array), entity_map (array), heading_structure (array), faq_questions (array), internal_linking_recommendations (array), schema_recommendation, eeat_notes, local_seo_notes, aeo_geo_notes.`,
+      `\n\n${CONTENT_BRIEF_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
@@ -40,8 +41,8 @@ export async function POST(req: Request) {
     status: provider === "rules" ? "fallback" : "success",
     payloadIn: parsed.data,
     payloadOut: output,
-    costEstimate: provider === "rules" ? 0 : 0.1,
-    tokensUsed: provider === "rules" ? 0 : 1200,
+    costEstimate: ai ? ai.costEstimate : 0,
+    tokensUsed: ai ? ai.tokensUsed : 0,
   });
 
   return NextResponse.json({ provider, brief: output });

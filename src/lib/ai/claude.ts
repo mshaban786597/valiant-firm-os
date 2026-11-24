@@ -47,7 +47,23 @@ export function resolveModel(configured: string | undefined): string {
 /** How hard the model works on a request: lower is quicker and cheaper. */
 export type ClaudeEffort = "low" | "medium" | "high";
 
-export type ClaudeResult = { ok: true; text: string; model: string } | { ok: false; model: string; reason: string };
+export type ClaudeResult =
+  | { ok: true; text: string; model: string; inputTokens: number; outputTokens: number }
+  | { ok: false; model: string; reason: string };
+
+/** Published price in US dollars per million tokens: [input, output]. */
+const PRICE_PER_MILLION: Record<string, [number, number]> = {
+  "claude-haiku-5-5": [0.1, 0.5],
+  "claude-sonnet-5-5": [2, 10],
+  "claude-opus-5-5": [4, 20],
+};
+
+/** Cost of one call from its real token counts; undefined for a model with no listed price. */
+export function claudeCostUsd(model: string, inputTokens: number, outputTokens: number): number | undefined {
+  const price = PRICE_PER_MILLION[model];
+  if (!price) return undefined;
+  return (inputTokens * price[0] + outputTokens * price[1]) / 1_000_000;
+}
 
 function failureReason(err: unknown, model: string): string {
   if (err instanceof Anthropic.AuthenticationError) return "Anthropic rejected the API key";
@@ -69,6 +85,11 @@ export async function claudeText(opts: {
   system: string;
   user: string;
   effort?: ClaudeEffort;
+  /**
+   * JSON schema the reply must follow. With it the provider only produces
+   * valid JSON of that shape, so a reply cannot arrive malformed.
+   */
+  jsonSchema?: Record<string, unknown>;
   env?: Env;
 }): Promise<ClaudeResult | null> {
   const env = opts.env ?? process.env;
@@ -82,7 +103,10 @@ export async function claudeText(opts: {
     max_tokens: 16000,
     system: opts.system,
     messages: [{ role: "user" as const, content: opts.user }],
-    output_config: { effort: opts.effort ?? "medium" },
+    output_config: {
+      effort: opts.effort ?? "medium",
+      ...(opts.jsonSchema ? { format: { type: "json_schema" as const, schema: opts.jsonSchema } } : {}),
+    },
   };
 
   try {
@@ -103,7 +127,13 @@ export async function claudeText(opts: {
     if (!text.trim()) {
       return fail(model, message.stop_reason === "max_tokens" ? "Reply was cut off before any text" : "Claude returned no text");
     }
-    return { ok: true, text, model: message.model };
+    return {
+      ok: true,
+      text,
+      model: message.model,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    };
   } catch (err) {
     return fail(model, failureReason(err, model));
   }

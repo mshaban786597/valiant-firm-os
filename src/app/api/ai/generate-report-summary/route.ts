@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { REPORT_SUMMARY_SYSTEM } from "@/lib/ai/prompts";
 import { aiReportSummaryJson } from "@/lib/ai/llm-json";
+import { REPORT_SUMMARY_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { fallbackReportSummary } from "@/lib/ai/fallbacks";
 import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
@@ -25,7 +26,7 @@ export async function POST(req: Request) {
   const ai = await aiReportSummaryJson(
     REPORT_SUMMARY_SYSTEM,
     JSON.stringify(parsed.data) +
-      `\n\nReturn JSON keys: executive_summary, wins_this_month (array), issues_fixed (array), ranking_movements, traffic_summary, gbp_summary, next_30_days (array), client_friendly_explanation.`,
+      `\n\n${REPORT_SUMMARY_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
@@ -40,8 +41,8 @@ export async function POST(req: Request) {
     status: provider === "rules" ? "fallback" : "success",
     payloadIn: parsed.data,
     payloadOut: output,
-    costEstimate: provider === "rules" ? 0 : 0.14,
-    tokensUsed: provider === "rules" ? 0 : 1600,
+    costEstimate: ai ? ai.costEstimate : 0,
+    tokensUsed: ai ? ai.tokensUsed : 0,
   });
 
   return NextResponse.json({ provider, summary: output });

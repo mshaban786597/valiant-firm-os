@@ -34,13 +34,15 @@ vi.mock("@anthropic-ai/sdk", () => {
 });
 
 import Anthropic from "@anthropic-ai/sdk";
-import { DEFAULT_CLAUDE_MODEL, claudeText, extractJson, resolveModel } from "@/lib/ai/claude";
+import { DEFAULT_CLAUDE_MODEL, claudeCostUsd, claudeText, extractJson, resolveModel } from "@/lib/ai/claude";
+import { LEAD_SCORE_OUTPUT_RULES } from "@/lib/ai/compute-lead-score";
 import { PINGS } from "@/lib/integrations/catalog-ping";
 
 const reply = (text: string, extra: Record<string, unknown> = {}) => ({
   model: "served-model",
   stop_reason: "end_turn",
   content: [{ type: "text", text }],
+  usage: { input_tokens: 1200, output_tokens: 300 },
   ...extra,
 });
 
@@ -94,7 +96,7 @@ describe("claudeText", () => {
       env: { ANTHROPIC_API_KEY: "k", ANTHROPIC_MODEL: "claude-sonnet-4-20250514" },
     });
 
-    expect(got).toEqual({ ok: true, text: '{"a":1}', model: "served-model" });
+    expect(got).toEqual({ ok: true, text: '{"a":1}', model: "served-model", inputTokens: 1200, outputTokens: 300 });
     expect(betaCreate).not.toHaveBeenCalled();
     const body = create.mock.calls[0]![0] as Record<string, unknown>;
     expect(body.model).toBe("claude-haiku-5-5");
@@ -122,6 +124,14 @@ describe("claudeText", () => {
     expect(body.fallbacks).toBe("default");
     expect(body.betas).toEqual(["server-side-fallback-2026-07-01"]);
     expect(body.output_config).toEqual({ effort: "medium" });
+  });
+
+  it("passes a JSON schema through as the reply format", async () => {
+    create.mockResolvedValue(reply('{"a":1}'));
+    const jsonSchema = { type: "object", properties: { a: { type: "number" } }, required: ["a"], additionalProperties: false };
+    await claudeText({ system: "s", user: "u", jsonSchema, env: { ANTHROPIC_API_KEY: "k" } });
+    const body = create.mock.calls[0]![0] as Record<string, unknown>;
+    expect(body.output_config).toEqual({ effort: "medium", format: { type: "json_schema", schema: jsonSchema } });
   });
 
   it("joins text blocks and ignores thinking blocks", async () => {
@@ -166,6 +176,36 @@ describe("claudeText", () => {
     const logged = (console.error as unknown as { mock: { calls: unknown[][] } }).mock.calls.map((c) => String(c[0])).join("\n");
     expect(logged).toContain("ai.claude");
     expect(logged).not.toContain('"k"');
+  });
+});
+
+describe("claudeCostUsd", () => {
+  it("prices a call from its real token counts", () => {
+    // Haiku 5.5: $0.10 per million in, $0.50 per million out.
+    expect(claudeCostUsd("claude-haiku-5-5", 1_000_000, 0)).toBeCloseTo(0.1, 10);
+    expect(claudeCostUsd("claude-haiku-5-5", 1200, 300)).toBeCloseTo(0.00027, 10);
+    expect(claudeCostUsd("claude-sonnet-5-5", 1000, 1000)).toBeCloseTo(0.012, 10);
+    expect(claudeCostUsd("claude-opus-5-5", 1000, 1000)).toBeCloseTo(0.024, 10);
+  });
+
+  it("gives no figure for a model with no listed price", () => {
+    expect(claudeCostUsd("some-future-model", 1000, 1000)).toBeUndefined();
+  });
+});
+
+describe("lead scoring prompt", () => {
+  it("states the same point limits the reply is checked against", () => {
+    for (const line of [
+      "seo_weakness_score: number from 0 to 25",
+      "gbp_score: number from 0 to 20",
+      "review_velocity_score: number from 0 to 20",
+      "website_quality_score: number from 0 to 20",
+      "business_signal_score: number from 0 to 15",
+      "composite_score: number from 0 to 100",
+    ]) {
+      expect(LEAD_SCORE_OUTPUT_RULES).toContain(line);
+    }
+    expect(LEAD_SCORE_OUTPUT_RULES).toContain("Use only facts present in the lead JSON");
   });
 });
 
