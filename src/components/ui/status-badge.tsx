@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const VARIANTS: Record<string, string> = {
   success:
-    "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-300",
+    "bg-emerald-500/15 text-emerald-700 ring-emerald-500/25 dark:text-emerald-300",
   warning: "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-300",
   danger:
     "bg-valiant-soft text-valiant ring-valiant/30 dark:text-red-300 dark:ring-red-400/25",

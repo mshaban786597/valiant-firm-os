@@ -219,7 +219,7 @@ export default async function InboxPage({ searchParams }: { searchParams?: { sit
           <>
             <IntakePanel sites={intakeSites} />
             {local ? (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-amber-700 dark:text-amber-400">
                 You are on a local address ({origin}). A real website cannot reach it: the addresses above only work for
                 real forms once the app is deployed.
               </p>

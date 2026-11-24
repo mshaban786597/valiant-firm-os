@@ -71,7 +71,7 @@ export function DeleteLeadButton({ id, isTest }: { id: string; isTest: boolean }
           setBusy(false);
         }
       }}
-      className="text-xs text-muted hover:text-red-600 disabled:opacity-50"
+      className="text-xs text-muted hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
     >
       Delete
     </button>
@@ -173,7 +173,7 @@ export function IntakePanel({ sites }: { sites: IntakeSite[] }) {
                         <button type="button" className={btn} disabled={busy !== null} onClick={() => act(s.id, "rotate")}>
                           New address
                         </button>
-                        <button type="button" className={`${btn} text-red-600`} disabled={busy !== null} onClick={() => act(s.id, "disable")}>
+                        <button type="button" className={`${btn} text-red-600 dark:text-red-400`} disabled={busy !== null} onClick={() => act(s.id, "disable")}>
                           Switch off
                         </button>
                       </>

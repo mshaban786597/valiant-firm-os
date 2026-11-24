@@ -21,7 +21,7 @@ function Change({ current, previous }: { current: number; previous: number | nul
   if (c === null) return <span className="text-xs text-muted">no earlier data</span>;
   const up = c >= 0;
   return (
-    <span className={`text-xs font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}>
+    <span className={`text-xs font-semibold ${up ? "text-emerald-700 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
       {up ? "+" : ""}
       {c.toFixed(0)}% vs previous 28 days
     </span>

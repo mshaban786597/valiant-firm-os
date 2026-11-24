@@ -159,7 +159,7 @@ export function IntegrationsWorkspace({
                             type="button"
                             disabled={busy === `off:${r.id}`}
                             onClick={() => disconnect(r.id, r.name)}
-                            className="rounded-lg border border-card-border px-2.5 py-1 text-xs font-semibold text-red-600 disabled:opacity-50"
+                            className="rounded-lg border border-card-border px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 disabled:opacity-50"
                           >
                             Disconnect
                           </button>
@@ -190,7 +190,7 @@ export function IntegrationsWorkspace({
                     ) : null}
                     {result ? (
                       <p
-                        className={`mt-2 text-xs font-medium ${result.ok ? "text-emerald-600 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}
+                        className={`mt-2 text-xs font-medium ${result.ok ? "text-emerald-700 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}
                       >
                         {result.detail}
                       </p>

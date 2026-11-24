@@ -13,6 +13,7 @@
  *                 (menus, dialogs, drawers) so their text stays readable
  */
 :root {
+  color-scheme: light;
   --page: #e8ecf4;
   --foreground: #0f172a;
   --card: rgba(255, 255, 255, 0.58);
@@ -32,6 +33,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --page: #05070d;
   --foreground: #eceef4;
   --card: rgba(255, 255, 255, 0.06);

@@ -42,7 +42,7 @@ function Movement({ row }: { row: RankRow }) {
   if (row.status === "flat") return <span className="text-xs text-muted">No change</span>;
   const up = row.status === "up";
   return (
-    <span className={`text-xs font-semibold ${up ? "text-emerald-600 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}>
+    <span className={`text-xs font-semibold ${up ? "text-emerald-700 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}>
       {up ? "▲ Up" : "▼ Down"} {Math.abs(row.change!).toFixed(1)}
     </span>
   );

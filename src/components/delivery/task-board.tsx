@@ -112,7 +112,7 @@ export function TaskBoard({ tasks }: { tasks: DeliveryTask[] }) {
                   <button
                     type="button"
                     onClick={() => setDelId(task.id)}
-                    className="mt-2 w-full rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-100"
+                    className="mt-2 w-full rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-600 dark:text-red-200"
                   >
                     Delete
                   </button>

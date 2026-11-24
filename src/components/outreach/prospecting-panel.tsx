@@ -116,7 +116,7 @@ export function ProspectingPanel({ targets, providerConnected }: { targets: Targ
                       t.lastRun.status === "ok" ? (
                         `${t.lastRun.resultsSeen} results checked, ${t.lastRun.added} added`
                       ) : (
-                        <span className="text-red-600">{t.lastRun.error ?? t.lastRun.status}</span>
+                        <span className="text-red-600 dark:text-red-400">{t.lastRun.error ?? t.lastRun.status}</span>
                       )
                     ) : (
                       "—"
@@ -155,7 +155,7 @@ export function ProspectingPanel({ targets, providerConnected }: { targets: Targ
                               void call(`del:${t.id}`, `/api/prospecting/targets/${t.id}`, "DELETE");
                             }
                           }}
-                          className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold text-red-600 disabled:opacity-40"
+                          className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 disabled:opacity-40"
                         >
                           Remove
                         </button>

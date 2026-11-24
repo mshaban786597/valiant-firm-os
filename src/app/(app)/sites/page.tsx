@@ -101,7 +101,7 @@ export default async function SitesPage() {
                           <div>
                             {num(l.analytics.sessions)} sessions · {num(l.analytics.keyEvents)} key events
                           </div>
-                          {l.analytics.properties > 1 ? <div className="text-amber-600">Largest of {l.analytics.properties} properties</div> : null}
+                          {l.analytics.properties > 1 ? <div className="text-amber-700 dark:text-amber-400">Largest of {l.analytics.properties} properties</div> : null}
                         </>
                       ) : (
                         <span className="text-muted">Analytics not connected</span>
@@ -110,7 +110,7 @@ export default async function SitesPage() {
                     <td className="px-4 py-3 text-xs">
                       {l && l.checks > 0 ? (
                         <>
-                          <Link href="/monitoring" className={l.openIncidents ? "font-semibold text-red-600" : "text-emerald-600"}>
+                          <Link href="/monitoring" className={l.openIncidents ? "font-semibold text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}>
                             {l.openIncidents ? `${l.openIncidents} open issue${l.openIncidents === 1 ? "" : "s"}` : "No open issues"}
                           </Link>
                           <div className="text-muted">

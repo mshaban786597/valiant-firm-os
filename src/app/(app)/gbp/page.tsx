@@ -131,9 +131,9 @@ export default async function GbpPage() {
                         {!live ? (
                           <span className="text-muted">—</span>
                         ) : l.missing.length ? (
-                          <span className="text-amber-600">Missing: {l.missing.join(", ")}</span>
+                          <span className="text-amber-700 dark:text-amber-400">Missing: {l.missing.join(", ")}</span>
                         ) : (
-                          <span className="text-emerald-600">Nothing missing</span>
+                          <span className="text-emerald-700 dark:text-emerald-400">Nothing missing</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
