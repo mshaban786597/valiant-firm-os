@@ -168,18 +168,21 @@ describe("integration catalog", () => {
   it("has unique ids and covers the diagram's tool groups", () => {
     const ids = INTEGRATIONS.map((t) => t.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
-    ["gsc", "ga4", "gtm", "google-ads", "ubersuggest", "surfer", "clearscope",
-      "marketmuse", "frase", "meta-ads", "linkedin-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
+    ["gsc", "ga4", "gtm", "google-ads", "ubersuggest", "meta-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
       (id) => expect(getIntegration(id)).not.toBeNull(),
     );
   });
   it("derives status from env only", () => {
-    const surfer = getIntegration("surfer")!;
-    expect(integrationState(surfer, {})).toBe("not_connected");
-    expect(integrationState(surfer, { SURFER_API_KEY: "  " })).toBe("not_connected");
-    expect(integrationState(surfer, { SURFER_API_KEY: "k" })).toBe("connected");
+    const mailchimp = getIntegration("mailchimp")!;
+    expect(integrationState(mailchimp, {})).toBe("not_connected");
+    expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "  " })).toBe("not_connected");
+    expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "k" })).toBe("connected");
     // Tools we do not use are not listed at all.
-    ["ahrefs", "semrush", "moz"].forEach((id) => expect(getIntegration(id)).toBeNull());
+    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads"].forEach((id) =>
+      expect(getIntegration(id)).toBeNull(),
+    );
+    expect(hasLiveTest("linkedin-ads")).toBe(false);
+    expect(INTEGRATIONS.some((tool) => (tool.category as string) === "Content & Semantic SEO")).toBe(false);
     // Ubersuggest is connected by signing in, so env alone never connects it (see ubersuggest.test.ts).
     expect(integrationState(getIntegration("ubersuggest")!, {})).toBe("not_connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);

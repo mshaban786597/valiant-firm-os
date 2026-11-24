@@ -20,7 +20,6 @@
 export type IntegrationCategory =
   | "Google Tools"
   | "SEO & Keyword Tools"
-  | "Content & Semantic SEO"
   | "Digital Marketing"
   | "AI"
   | "Notifications"
@@ -130,39 +129,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     envVars: ["ANSWERTHEPUBLIC_API_KEY"],
     data: "planned",
   },
-  // ---- Content -----------------------------------------------------------
-  {
-    id: "surfer",
-    name: "Surfer",
-    category: "Content & Semantic SEO",
-    powers: "Content scoring, topical maps",
-    envVars: ["SURFER_API_KEY"],
-    data: "planned",
-  },
-  {
-    id: "clearscope",
-    name: "Clearscope",
-    category: "Content & Semantic SEO",
-    powers: "AI content briefs",
-    envVars: ["CLEARSCOPE_API_KEY"],
-    data: "planned",
-  },
-  {
-    id: "marketmuse",
-    name: "MarketMuse",
-    category: "Content & Semantic SEO",
-    powers: "Semantic content analysis",
-    envVars: ["MARKETMUSE_API_KEY"],
-    data: "planned",
-  },
-  {
-    id: "frase",
-    name: "Frase",
-    category: "Content & Semantic SEO",
-    powers: "Content optimization",
-    envVars: ["FRASE_API_KEY"],
-    data: "planned",
-  },
   // ---- Digital marketing -------------------------------------------------
   {
     id: "meta-ads",
@@ -170,14 +136,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     category: "Digital Marketing",
     powers: "Facebook & Instagram ad performance",
     envVars: ["META_ACCESS_TOKEN", "META_AD_ACCOUNT_ID"],
-    data: "planned",
-  },
-  {
-    id: "linkedin-ads",
-    name: "LinkedIn Ads",
-    category: "Digital Marketing",
-    powers: "LinkedIn campaign performance",
-    envVars: ["LINKEDIN_ACCESS_TOKEN"],
     data: "planned",
   },
   {

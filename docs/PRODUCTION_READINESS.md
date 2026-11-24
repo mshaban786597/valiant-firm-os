@@ -95,8 +95,8 @@ Status: **Fixture verified**. No real email was sent to anyone.
 | Search Console | Fixture verified; live Blocked | service account + property access |
 | GA4, GBP, Google Ads | Sample data only; live Pending | modules exist; no live adapter yet |
 | GTM | Pending | credential slot only |
-| Meta Ads, LinkedIn Ads, Mailchimp, Calendly, Stripe, Shopify, OpenAI, Anthropic, Telegram, Resend | Implemented, verification pending | connection test built; no credentials to run it |
-| AlsoAsked, AnswerThePublic, Surfer, Clearscope, MarketMuse, Frase, TikTok Ads, Amazon, eBay, Etsy | Pending | credential slot only |
+| Meta Ads, Mailchimp, Calendly, Stripe, Shopify, OpenAI, Anthropic, Telegram, Resend | Implemented, verification pending | connection test built; no credentials to run it |
+| AlsoAsked, AnswerThePublic, TikTok Ads, Amazon, eBay, Etsy | Pending | credential slot only |
 | Ubersuggest | Imported | No API key. Data is pulled through the Ubersuggest connector in Claude and stored as dated snapshots. Ahrefs, Semrush and Moz were removed on 2026-11-23: not used. |
 | Email / Slack / Telegram alerts | Fixture verified; live Blocked | no channel configured |
 | Outreach sending | Fixture verified; live Blocked | off by default (see Phase 4) |

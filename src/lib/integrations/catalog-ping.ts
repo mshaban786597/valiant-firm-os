@@ -21,7 +21,6 @@ export const PINGS: Record<string, (e: Env) => PingRequest> = {
     url: "https://graph.facebook.com/v19.0/me?fields=id",
     headers: bearer(e.META_ACCESS_TOKEN),
   }),
-  "linkedin-ads": (e) => ({ url: "https://api.linkedin.com/v2/userinfo", headers: bearer(e.LINKEDIN_ACCESS_TOKEN) }),
   mailchimp: (e) => {
     const key = e.MAILCHIMP_API_KEY ?? "";
     const dc = key.split("-")[1] ?? "us1";
