@@ -155,14 +155,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     envVars: ["ANTHROPIC_API_KEY"],
     data: "live",
   },
-  {
-    id: "openai",
-    name: "OpenAI",
-    category: "AI",
-    powers: "Primary model for AI scoring & summaries",
-    envVars: ["OPENAI_API_KEY"],
-    data: "live",
-  },
   // ---- Notifications -----------------------------------------------------
   {
     id: "email-alerts",

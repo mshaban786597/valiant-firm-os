@@ -178,10 +178,12 @@ describe("integration catalog", () => {
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "  " })).toBe("not_connected");
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "k" })).toBe("connected");
     // Tools we do not use are not listed at all.
-    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm"].forEach((id) =>
+    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm", "openai"].forEach((id) =>
       expect(getIntegration(id)).toBeNull(),
     );
     expect(hasLiveTest("linkedin-ads")).toBe(false);
+    expect(hasLiveTest("openai")).toBe(false);
+    expect(getIntegration("anthropic")).not.toBeNull();
     expect(INTEGRATIONS.some((tool) => (tool.category as string) === "Content & Semantic SEO")).toBe(false);
     // Ubersuggest is connected by signing in, so env alone never connects it (see ubersuggest.test.ts).
     expect(integrationState(getIntegration("ubersuggest")!, {})).toBe("not_connected");

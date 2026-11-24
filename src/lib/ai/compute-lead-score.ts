@@ -24,7 +24,7 @@ export const LEAD_SCORE_OUTPUT_RULES = `Return one JSON object with exactly thes
 A higher score means a stronger sales opportunity. A null field in the lead means the fact is unknown: score it cautiously and say so in reasoning_summary. Use only facts present in the lead JSON; do not claim an audit, a check or a ranking that is not in it.`;
 
 export async function computeLeadScore(input: LeadScoreInput): Promise<{
-  provider: "openai" | "anthropic" | "rules";
+  provider: "anthropic" | "rules";
   score: LeadScoreOutput;
   /** Real figures from the provider; 0 when the rules produced the score. */
   tokensUsed?: number;
@@ -32,7 +32,7 @@ export async function computeLeadScore(input: LeadScoreInput): Promise<{
 }> {
   const userPayload = `Lead JSON:\n${JSON.stringify(input)}\n\n${LEAD_SCORE_OUTPUT_RULES}`;
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let score = ruleBasedLeadScore(input);
 
   const ai = await aiLeadScoreJson(LEAD_SCORE_SYSTEM, userPayload);

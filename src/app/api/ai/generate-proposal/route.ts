@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = fallbackProposal({
     lead: parsed.data.lead,
     call_notes: parsed.data.call_notes,

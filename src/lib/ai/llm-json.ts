@@ -13,43 +13,6 @@ import type { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { claudeCostUsd, claudeText, extractJson, type ClaudeEffort } from "@/lib/ai/claude";
 
-async function openAiJson(system: string, user: string) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-
-  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.25,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
-    usage?: { total_tokens?: number };
-  };
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) return null;
-  try {
-    // No price table for this provider: tokens are real, cost is left unknown.
-    return { json: JSON.parse(content) as unknown, tokensUsed: data.usage?.total_tokens, costEstimate: undefined };
-  } catch {
-    return null;
-  }
-}
-
 async function anthropicJson(system: string, user: string, effort: ClaudeEffort, schema: z.ZodType) {
   // The reply is constrained to the same schema it is checked against below.
   const jsonSchema = zodOutputFormat(schema).schema as Record<string, unknown>;
@@ -65,8 +28,6 @@ async function anthropicJson(system: string, user: string, effort: ClaudeEffort,
 }
 
 async function llmJson(system: string, user: string, schema: z.ZodType, effort: ClaudeEffort = "medium") {
-  const openai = await openAiJson(system, user);
-  if (openai) return { provider: "openai" as const, ...openai };
   const claude = await anthropicJson(system, user, effort, schema);
   if (claude) return { provider: "anthropic" as const, ...claude };
   return null;
@@ -75,7 +36,7 @@ async function llmJson(system: string, user: string, schema: z.ZodType, effort: 
 export async function aiLeadScoreJson(
   system: string,
   user: string,
-): Promise<{ provider: "openai" | "anthropic"; value: LeadScoreOutput; tokensUsed?: number; costEstimate?: number } | null> {
+): Promise<{ provider: "anthropic"; value: LeadScoreOutput; tokensUsed?: number; costEstimate?: number } | null> {
   const got = await llmJson(system, user, leadScoreOutputSchema, "low");
   if (!got) return null;
   const parsed = leadScoreOutputSchema.safeParse(got.json);

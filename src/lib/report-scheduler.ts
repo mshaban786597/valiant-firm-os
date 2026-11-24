@@ -26,12 +26,12 @@ function toSummaryInput(report: ReportWithClient) {
 }
 
 async function computeSummary(input: ReturnType<typeof toSummaryInput>): Promise<{
-  provider: "openai" | "anthropic" | "rules";
+  provider: "anthropic" | "rules";
   output: ReportSummaryOutput;
   tokensUsed?: number;
   costEstimate?: number;
 }> {
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = fallbackReportSummary(input);
   const ai = await aiReportSummaryJson(
     REPORT_SUMMARY_SYSTEM,

@@ -65,7 +65,7 @@ export const AGENTS: AgentDefinition[] = [
     output: "Schema-validated JSON (src/lib/schemas)",
     evidence: "AI log entry per call (tokens, cost, status)",
     permissions: ["report.write", "lead.write"],
-    tools: ["Anthropic API (after OpenAI in the model chain)"],
+    tools: ["Anthropic API"],
     budget: "30-day AI spend shown on the Dashboard; spend-guardrail workflow available",
     fallbackWorker: "Deterministic fallbacks (src/lib/ai/fallbacks.ts)",
     logNames: ["report-summary", "health-risk", "outreach"],

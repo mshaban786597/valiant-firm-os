@@ -30,7 +30,6 @@ export const PINGS: Record<string, (e: Env) => PingRequest> = {
     url: `https://api.anthropic.com/v1/models/${encodeURIComponent(resolveModel(e.ANTHROPIC_MODEL))}`,
     headers: { "x-api-key": e.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
   }),
-  openai: (e) => ({ url: "https://api.openai.com/v1/models", headers: bearer(e.OPENAI_API_KEY) }),
   "email-alerts": (e) => ({ url: "https://api.resend.com/domains", headers: bearer(e.RESEND_API_KEY) }),
   telegram: (e) => ({ url: `https://api.telegram.org/bot${e.TELEGRAM_BOT_TOKEN}/getMe` }),
   shopify: (e) => ({

@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = ruleHealthRiskFromSignals(
     parsed.data.client_name,
     parsed.data.signals,

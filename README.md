@@ -70,7 +70,7 @@ Seed bootstraps org slug **`valiant-firm`** plus Founder membership tied to `Rol
 
 | Route | Purpose |
 | --- | --- |
-| `POST /api/ai/score-lead` | Strict JSON scoring w/ OpenAI→Anthropic→rules fallback |
+| `POST /api/ai/score-lead` | Strict JSON scoring w/ Claude→rules fallback |
 | `POST /api/ai/generate-outreach` | Multi-touch outreach bundle |
 | `POST /api/ai/generate-proposal` | Structured proposal JSON sections |
 | `POST /api/ai/content-brief` | SERP/AEO/GEO-aware brief JSON |

@@ -30,8 +30,6 @@ export default async function SettingsPage() {
     ["DATABASE_URL", "Supabase Postgres connection string"],
     ["NEXTAUTH_SECRET", "Random secret for JWT/session crypto"],
     ["NEXTAUTH_URL", "Public site URL (e.g., https://os.valiantfirm.com)"],
-    ["OPENAI_API_KEY", "Optional — enables AI JSON completions"],
-    ["OPENAI_MODEL", "Optional override (default gpt-4o-mini)"],
     ["ANTHROPIC_API_KEY", "Optional Claude fallback"],
     ["WEBHOOK_SECRET", "HMAC secret for /api/webhooks/automation"],
     ["STRIPE_SECRET_KEY", "Placeholder — billing integrations"],
