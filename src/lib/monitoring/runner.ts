@@ -16,7 +16,7 @@ import { buildPageSpeedReport, pageSpeedDetail } from "@/lib/monitoring/pagespee
 
 type MonitorLike = Pick<Monitor, "type" | "target"> & { state?: unknown; kind?: string | null };
 
-const UA = "ValiantFirmMonitor/1.0 (+https://valiant-firm-os.vercel.app)";
+const UA = "ValiantFirmMonitor/1.0 (+https://app.valiantfirm.net)";
 
 function toUrl(target: string): string {
   return target.startsWith("http") ? target : `https://${target}`;

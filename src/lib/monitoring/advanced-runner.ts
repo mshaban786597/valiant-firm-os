@@ -16,7 +16,7 @@ import {
   type CrawledPage,
 } from "@/lib/monitoring/advanced";
 
-const UA = "ValiantFirmMonitor/1.0 (+https://valiant-firm-os.vercel.app)";
+const UA = "ValiantFirmMonitor/1.0 (+https://app.valiantfirm.net)";
 const toUrl = (t: string) => (t.startsWith("http") ? t : `https://${t}`);
 
 async function get(url: string, timeoutMs: number, method = "GET") {
