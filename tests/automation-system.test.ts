@@ -178,7 +178,7 @@ describe("integration catalog", () => {
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "  " })).toBe("not_connected");
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "k" })).toBe("connected");
     // Tools we do not use are not listed at all.
-    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm", "openai"].forEach((id) =>
+    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm", "openai", "alsoasked", "answerthepublic"].forEach((id) =>
       expect(getIntegration(id)).toBeNull(),
     );
     expect(hasLiveTest("linkedin-ads")).toBe(false);

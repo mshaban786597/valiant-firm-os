@@ -96,7 +96,7 @@ Status: **Fixture verified**. No real email was sent to anyone.
 | GA4, GBP | Sample data only; live Pending | modules exist; no live adapter yet |
 | Google Ads | Live adapter, read only (service account) | Explorer access approved; the only linked account (Valiant Firm, 302-610-1423) is cancelled, so Google returns no data yet |
 | Meta Ads, Mailchimp, Calendly, Stripe, Shopify, Anthropic, Telegram, Resend | Implemented, verification pending | connection test built; no credentials to run it |
-| AlsoAsked, AnswerThePublic, TikTok Ads, Amazon, eBay, Etsy | Pending | credential slot only |
+| TikTok Ads, Amazon, eBay, Etsy | Pending | credential slot only |
 | Ubersuggest | Imported | No API key. Data is pulled through the Ubersuggest connector in Claude and stored as dated snapshots. Ahrefs, Semrush and Moz were removed on 2026-11-23: not used. |
 | Email / Slack / Telegram alerts | Fixture verified; live Blocked | no channel configured |
 | Outreach sending | Fixture verified; live Blocked | off by default (see Phase 4) |

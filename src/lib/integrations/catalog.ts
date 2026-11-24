@@ -105,22 +105,6 @@ export const INTEGRATIONS: ToolIntegration[] = [
     oauth: true,
     data: "live",
   },
-  {
-    id: "alsoasked",
-    name: "AlsoAsked",
-    category: "SEO & Keyword Tools",
-    powers: "People-also-ask question research",
-    envVars: ["ALSOASKED_API_KEY"],
-    data: "planned",
-  },
-  {
-    id: "answerthepublic",
-    name: "AnswerThePublic",
-    category: "SEO & Keyword Tools",
-    powers: "Search question research",
-    envVars: ["ANSWERTHEPUBLIC_API_KEY"],
-    data: "planned",
-  },
   // ---- Digital marketing -------------------------------------------------
   {
     id: "meta-ads",
