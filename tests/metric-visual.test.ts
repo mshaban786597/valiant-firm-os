@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NAV_ITEMS as ALL_NAV_ITEMS } from "@/components/layout/nav-items";
 import {
   Bot,
   Briefcase,
@@ -54,5 +55,13 @@ describe("icon for a page", () => {
     expect(navItemFor("/seo/keywords")?.label).toBe("SEO / GSC");
     expect(navItemFor("/search")?.label).toBe("Search");
     expect(navItemFor("/nowhere")).toBeUndefined();
+  });
+});
+
+describe("navigation", () => {
+  it("does not list the Content page", () => {
+    expect(ALL_NAV_ITEMS.some((n) => n.href === "/content" || n.label === "Content")).toBe(false);
+    expect(ALL_NAV_ITEMS.some((n) => n.href === "/gbp")).toBe(true);
+    expect(ALL_NAV_ITEMS.some((n) => n.href === "/google-ads")).toBe(true);
   });
 });

@@ -16,7 +16,6 @@ const DESTINATIONS: Command[] = [
   { label: "Campaigns", href: "/campaigns" },
   { label: "Ecommerce", href: "/ecommerce" },
   { label: "Delivery / Tasks", href: "/delivery" },
-  { label: "Content", href: "/content" },
   { label: "Reports", href: "/reports" },
   { label: "Health", href: "/health" },
   { label: "SEO / Search Console", href: "/seo" },
