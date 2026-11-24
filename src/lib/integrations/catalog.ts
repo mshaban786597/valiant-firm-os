@@ -80,20 +80,12 @@ export const INTEGRATIONS: ToolIntegration[] = [
     data: "live",
   },
   {
-    id: "gtm",
-    name: "Google Tag Manager",
-    category: "Google Tools",
-    powers: "Tag & tracking audits",
-    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GTM_ACCOUNT_ID"],
-    data: "planned",
-  },
-  {
     id: "google-ads",
     name: "Google Ads",
     category: "Google Tools",
-    powers: "Campaigns, spend, conversions",
-    envVars: ["GOOGLE_ADS_DEVELOPER_TOKEN", "GOOGLE_ADS_CUSTOMER_ID", "GOOGLE_ADS_REFRESH_TOKEN"],
-    data: "sample",
+    powers: "Campaigns, spend, clicks and conversions (read only)",
+    envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON"],
+    data: "live",
   },
   {
     id: "gbp",

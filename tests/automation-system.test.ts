@@ -168,7 +168,7 @@ describe("integration catalog", () => {
   it("has unique ids and covers the diagram's tool groups", () => {
     const ids = INTEGRATIONS.map((t) => t.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
-    ["gsc", "ga4", "gtm", "google-ads", "ubersuggest", "meta-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
+    ["gsc", "ga4", "google-ads", "ubersuggest", "meta-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
       (id) => expect(getIntegration(id)).not.toBeNull(),
     );
   });
@@ -178,7 +178,7 @@ describe("integration catalog", () => {
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "  " })).toBe("not_connected");
     expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "k" })).toBe("connected");
     // Tools we do not use are not listed at all.
-    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads"].forEach((id) =>
+    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm"].forEach((id) =>
       expect(getIntegration(id)).toBeNull(),
     );
     expect(hasLiveTest("linkedin-ads")).toBe(false);

@@ -6,6 +6,7 @@ import { writeAuditLog } from "@/lib/audit";
 import { getIntegration } from "@/lib/integrations/catalog";
 import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
 import { UBERSUGGEST, testUbersuggest } from "@/lib/integrations/ubersuggest";
+import { GOOGLE_ADS_ID, readGoogleAds } from "@/lib/integrations/google-ads-sync";
 
 export const runtime = "nodejs";
 
@@ -31,6 +32,11 @@ export async function POST(req: Request) {
     // Signed-in tool: the test is a real call with the stored sign-in.
     const r = await testUbersuggest(org.organizationId);
     result = r.ok ? { ok: true, detail: r.data.summary } : { ok: false, detail: r.detail };
+    realCall = true;
+  } else if (tool.id === GOOGLE_ADS_ID) {
+    // A real read of every Ads account the service account can reach. Saves nothing.
+    const r = await readGoogleAds();
+    result = { ok: r.ok, detail: r.message };
     realCall = true;
   } else {
     result = await testIntegration(tool);

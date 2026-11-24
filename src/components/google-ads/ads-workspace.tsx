@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast-provider";
 import { errorMessageFromResponse } from "@/lib/api-error";
+import { useCan } from "@/components/providers/permissions-provider";
 import { formatCents } from "@/lib/money";
 
 export type AdsRow = {
@@ -34,6 +35,20 @@ export function AdsWorkspace({
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const canSync = useCan()("integration.write");
+
+  async function syncFromGoogle() {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/google-ads/sync", { method: "POST", credentials: "include" });
+      if (!res.ok) toast.error(await errorMessageFromResponse(res));
+      else toast.success(((await res.json()) as { message: string }).message);
+      router.refresh();
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   async function act(id: string, method: "PATCH" | "DELETE", body?: unknown) {
     setBusyId(id);
@@ -54,7 +69,17 @@ export function AdsWorkspace({
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        {canSync ? (
+          <button
+            type="button"
+            disabled={syncing}
+            onClick={syncFromGoogle}
+            className="rounded-lg border border-card-border bg-card px-3 py-2 text-xs font-semibold text-foreground disabled:opacity-50"
+          >
+            {syncing ? "Syncing…" : "Sync from Google Ads"}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => setOpen(true)}
