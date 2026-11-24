@@ -38,7 +38,9 @@ const SERVER_FALLBACK_MODELS = new Set([
 /** The model the app will actually call for a given ANTHROPIC_MODEL value. */
 export function resolveModel(configured: string | undefined): string {
   const id = (configured ?? "").trim();
-  if (!id || RETIRED_MODELS.has(id)) return DEFAULT_CLAUDE_MODEL;
+  // Anything that is not a Claude model name (for example a key pasted into
+  // the wrong box) is ignored, so it is never sent or logged as a model.
+  if (!id.startsWith("claude-") || RETIRED_MODELS.has(id)) return DEFAULT_CLAUDE_MODEL;
   return id;
 }
 

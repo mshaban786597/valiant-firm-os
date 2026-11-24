@@ -67,6 +67,11 @@ describe("resolveModel", () => {
     expect(resolveModel("claude-3-haiku-20240307")).toBe(DEFAULT_CLAUDE_MODEL);
   });
 
+  it("ignores a value that is not a Claude model name", () => {
+    expect(resolveModel("sk-ant-api03-not-a-model")).toBe(DEFAULT_CLAUDE_MODEL);
+    expect(resolveModel("haiku")).toBe(DEFAULT_CLAUDE_MODEL);
+  });
+
   it("leaves any other configured model alone", () => {
     expect(resolveModel("claude-opus-5-5")).toBe("claude-opus-5-5");
     expect(resolveModel(" claude-sonnet-5-5 ")).toBe("claude-sonnet-5-5");
