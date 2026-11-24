@@ -19,6 +19,7 @@ import {
 
 import { IconChip } from "@/components/dashboard/kpi-card";
 import { metricVisual } from "@/components/ui/metric-visual";
+import { AXIS_TICK, BAR_CURSOR, LINE_CURSOR, TOOLTIP_STYLE, legendText } from "@/components/charts/chart-theme";
 
 const PIE_COLORS = ["#D30404", "#2563eb", "#f97316", "#10b981", "#a855f7", "#64748b"];
 
@@ -55,9 +56,9 @@ export function MrrAreaChart({
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <XAxis dataKey="month" tick={AXIS_TICK} />
+        <YAxis tick={AXIS_TICK} />
+        <Tooltip {...TOOLTIP_STYLE} cursor={LINE_CURSOR} />
         <Area
           type="monotone"
           dataKey="mrr"
@@ -79,9 +80,9 @@ export function FunnelBarChart({
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data} layout="vertical" margin={{ left: 16 }}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-        <XAxis type="number" />
-        <YAxis type="category" dataKey="stage" width={120} tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <XAxis type="number" tick={AXIS_TICK} />
+        <YAxis type="category" dataKey="stage" width={120} tick={AXIS_TICK} />
+        <Tooltip {...TOOLTIP_STYLE} cursor={BAR_CURSOR} />
         <Bar dataKey="count" fill="#2563eb" radius={[0, 6, 6, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -101,8 +102,8 @@ export function HealthPieChart({
             <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip />
-        <Legend />
+        <Tooltip {...TOOLTIP_STYLE} />
+        <Legend formatter={legendText} />
       </PieChart>
     </ResponsiveContainer>
   );
@@ -117,10 +118,10 @@ export function OutreachComboChart({
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <Legend />
+        <XAxis dataKey="label" tick={AXIS_TICK} />
+        <YAxis tick={AXIS_TICK} />
+        <Tooltip {...TOOLTIP_STYLE} cursor={BAR_CURSOR} />
+        <Legend formatter={legendText} />
         <Bar dataKey="sent" fill="#64748b" radius={[4, 4, 0, 0]} />
         <Bar dataKey="replies" fill="#10b981" radius={[4, 4, 0, 0]} />
         <Bar dataKey="booked" fill="#D30404" radius={[4, 4, 0, 0]} />
@@ -138,9 +139,9 @@ export function TasksCompletionChart({
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-        <XAxis dataKey="status" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <XAxis dataKey="status" tick={AXIS_TICK} />
+        <YAxis tick={AXIS_TICK} />
+        <Tooltip {...TOOLTIP_STYLE} cursor={BAR_CURSOR} />
         <Bar dataKey="count" fill="#22d3ee" radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -156,9 +157,9 @@ export function ServiceRevenueBar({
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-        <XAxis type="number" />
-        <YAxis type="category" dataKey="service" width={140} tick={{ fontSize: 11 }} />
-        <Tooltip />
+        <XAxis type="number" tick={AXIS_TICK} />
+        <YAxis type="category" dataKey="service" width={140} tick={AXIS_TICK} />
+        <Tooltip {...TOOLTIP_STYLE} cursor={BAR_CURSOR} />
         <Bar dataKey="amount" fill="#D30404" radius={[0, 6, 6, 0]} />
       </BarChart>
     </ResponsiveContainer>
