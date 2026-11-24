@@ -1,4 +1,5 @@
 import { missingEnv, type ToolIntegration } from "@/lib/integrations/catalog";
+import { resolveModel } from "@/lib/ai/claude";
 
 /**
  * Live connection tests for the tools in the catalog. Server routes only:
@@ -27,7 +28,7 @@ export const PINGS: Record<string, (e: Env) => PingRequest> = {
     return { url: `https://${dc}.api.mailchimp.com/3.0/ping`, headers: bearer(key) };
   },
   anthropic: (e) => ({
-    url: "https://api.anthropic.com/v1/models?limit=1",
+    url: `https://api.anthropic.com/v1/models/${encodeURIComponent(resolveModel(e.ANTHROPIC_MODEL))}`,
     headers: { "x-api-key": e.ANTHROPIC_API_KEY ?? "", "anthropic-version": "2023-06-01" },
   }),
   openai: (e) => ({ url: "https://api.openai.com/v1/models", headers: bearer(e.OPENAI_API_KEY) }),

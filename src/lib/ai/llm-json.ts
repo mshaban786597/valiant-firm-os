@@ -9,6 +9,7 @@ import type { ReportSummaryOutput } from "@/lib/schemas/report-summary";
 import { reportSummaryOutputSchema } from "@/lib/schemas/report-summary";
 import type { HealthRiskOutput } from "@/lib/schemas/health-risk";
 import { healthRiskOutputSchema } from "@/lib/schemas/health-risk";
+import { claudeText, extractJson, type ClaudeEffort } from "@/lib/ai/claude";
 
 async function openAiJson(system: string, user: string) {
   const key = process.env.OPENAI_API_KEY;
@@ -46,47 +47,16 @@ async function openAiJson(system: string, user: string) {
   }
 }
 
-async function anthropicJson(system: string, user: string) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
-
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-20250514";
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 2048,
-      temperature: 0.2,
-      system,
-      messages: [{ role: "user", content: user }],
-    }),
-  });
-
-  if (!res.ok) return null;
-  const data = (await res.json()) as {
-    content?: { type: string; text?: string }[];
-  };
-  const text = data.content?.find((c) => c.type === "text")?.text;
-  if (!text) return null;
-  try {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    const slice = start >= 0 ? text.slice(start, end + 1) : text;
-    return JSON.parse(slice) as unknown;
-  } catch {
-    return null;
-  }
+async function anthropicJson(system: string, user: string, effort: ClaudeEffort) {
+  const reply = await claudeText({ system, user, effort });
+  if (!reply || !reply.ok) return null;
+  return extractJson(reply.text);
 }
 
-async function llmJson(system: string, user: string) {
+async function llmJson(system: string, user: string, effort: ClaudeEffort = "medium") {
   const openai = await openAiJson(system, user);
   if (openai) return { provider: "openai" as const, json: openai };
-  const claude = await anthropicJson(system, user);
+  const claude = await anthropicJson(system, user, effort);
   if (claude) return { provider: "anthropic" as const, json: claude };
   return null;
 }
@@ -95,7 +65,7 @@ export async function aiLeadScoreJson(
   system: string,
   user: string,
 ): Promise<{ provider: "openai" | "anthropic"; value: LeadScoreOutput } | null> {
-  const got = await llmJson(system, user);
+  const got = await llmJson(system, user, "low");
   if (!got) return null;
   const parsed = leadScoreOutputSchema.safeParse(got.json);
   if (!parsed.success) return null;
@@ -135,7 +105,7 @@ export async function aiReportSummaryJson(system: string, user: string) {
 }
 
 export async function aiHealthRiskJson(system: string, user: string) {
-  const got = await llmJson(system, user);
+  const got = await llmJson(system, user, "low");
   if (!got) return null;
   const parsed = healthRiskOutputSchema.safeParse(got.json);
   if (!parsed.success) return null;
