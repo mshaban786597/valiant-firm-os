@@ -4,14 +4,11 @@ import { telemetry } from "@/lib/telemetry";
 import { notify } from "@/lib/notifications/dispatch";
 import { openInbox } from "@/lib/outreach/inbox";
 import { readReplies } from "@/lib/outreach/read-replies";
-import { REPLY_LABELS, type ReplyLabel } from "@/lib/outreach/sequence";
+import { REPLY_LABELS, STOP_LABELS } from "@/lib/outreach/sequence";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-/** Replies a person should hear about straight away. */
-const NOTIFY: ReplyLabel[] = ["interested", "question", "needs_review"];
 
 /**
  * Read replies and delivery failures from the outreach mailbox, stop the
@@ -52,7 +49,7 @@ export async function GET(req: Request) {
       totals.ignored += run.ignored;
       totals.duplicates += run.duplicates;
 
-      for (const r of run.recorded.filter((x) => NOTIFY.indexOf(x.label) !== -1)) {
+      for (const r of run.recorded) {
         const lead = await prisma.lead.findFirst({
           where: { id: r.leadId, organizationId },
           select: { businessName: true },
@@ -61,7 +58,13 @@ export async function GET(req: Request) {
           organizationId,
           event: "outreach_reply",
           title: `${lead?.businessName ?? "A prospect"}: ${REPLY_LABELS[r.label]}`,
-          body: r.needsReview ? "Needs your review before anything else is sent." : "Follow-ups for this prospect have stopped.",
+          body: r.needsReview
+            ? "Needs your review before anything else is sent."
+            : r.suppressed
+              ? "This address will not be emailed again."
+              : STOP_LABELS.indexOf(r.label) === -1
+                ? "Follow-ups continue as scheduled."
+                : "Follow-ups for this prospect have stopped.",
           path: `/leads/${r.leadId}`,
         });
       }

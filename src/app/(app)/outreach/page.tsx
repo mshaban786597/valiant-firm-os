@@ -16,6 +16,7 @@ import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
 import { providerFor, salesMetrics } from "@/lib/outreach/engine";
 import { dailyLimit } from "@/lib/outreach/pace";
+import { seenText } from "@/lib/outreach/seen";
 import { REPLY_LABELS, type ReplyLabel } from "@/lib/outreach/sequence";
 import { formatCurrency } from "@/lib/utils";
 
@@ -337,15 +338,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
                         {s.sentAt ? `Sent ${s.sentAt.toLocaleString()}` : `Due ${s.scheduledFor.toLocaleString()}`}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
-                        {s.clickedAt
-                          ? `Clicked ${s.clickedAt.toLocaleString()}`
-                          : s.openedAt
-                            ? `Opened ${s.openedAt.toLocaleString()}${s.openCount > 1 ? ` (${s.openCount}×)` : ""}`
-                            : s.deliveredAt
-                              ? "Delivered, not opened"
-                              : s.status === "sent"
-                                ? "No delivery report yet"
-                                : "—"}
+                        {seenText(s)}
                       </td>
                       <td className="px-4 py-3 text-xs text-muted">
                         {s.providerMessageId ? `${s.provider}: ${s.providerMessageId}` : "—"}
@@ -363,7 +356,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
         <section className="space-y-2">
           <h2 className="section-title">Replies</h2>
           {replies.length === 0 ? (
-            <EmptyState title="No replies logged" description="Use Log a reply when a prospect answers." />
+            <EmptyState title="No replies yet" description="Replies to your outreach mailbox appear here by themselves. You can also use Log a reply." />
           ) : (
             <div className="space-y-2">
               {replies.map((r) => (

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { telemetry } from "@/lib/telemetry";
+import { notify } from "@/lib/notifications/dispatch";
 import { processDueSends, reconcileSends } from "@/lib/outreach/engine";
+import { outreachRunAlerts } from "@/lib/outreach/run-alerts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +39,10 @@ export async function GET(req: Request) {
     totals.needsReconcile += run.needsReconcile + rec.stillAmbiguous;
     totals.skippedNoProvider += run.skippedNoProvider;
     totals.heldDailyLimit += run.heldDailyLimit;
+
+    for (const alert of outreachRunAlerts(run, rec.stillAmbiguous)) {
+      await notify({ organizationId, ...alert, path: "/outreach" });
+    }
   }
 
   await telemetry.info({
