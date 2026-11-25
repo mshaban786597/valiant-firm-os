@@ -39,6 +39,11 @@ const PROTECTED_PREFIXES = [
 ];
 
 export async function middleware(req: NextRequest) {
+  // The image optimizer is not used by this app. Refuse its endpoint outright.
+  if (req.nextUrl.pathname.startsWith("/_next/image")) {
+    return new NextResponse(null, { status: 404 });
+  }
+
   const secret = authSecret();
   const token =
     secret &&
@@ -75,6 +80,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/_next/image",
     "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

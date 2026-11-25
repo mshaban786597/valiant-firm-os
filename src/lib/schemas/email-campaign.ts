@@ -14,6 +14,6 @@ export const emailCampaignUpdateSchema = z.object({
 });
 
 export const emailRecipientsSchema = z.object({
-  source: z.enum(["clients", "leads"]).optional(),
+  source: z.enum(["clients", "contacts", "leads"]).optional(),
   emails: z.array(z.string().email()).max(1000).optional(),
 });

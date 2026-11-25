@@ -146,7 +146,32 @@ export interface CampaignSendRequest {
   subject: string;
   email: RenderedEmail;
   unsubscribeUrl: string;
-  oneClickUrl: string;
+  /** Null for a test email: there is no recipient to unsubscribe. */
+  oneClickUrl: string | null;
+  /** Overrides the per-recipient key. A test email uses a fresh one each time. */
+  idempotencyKey?: string;
+}
+
+/** The note placed above a test email, so it is never mistaken for the real send. */
+export const TEST_NOTE = "[Test email. Only you received this. The unsubscribe link works in the real campaign.]";
+
+/** A test copy of a campaign for the owner's own inbox. */
+export function buildTestEmail(
+  campaign: { id: string; subject: string; body: string },
+  to: string,
+  sender: CampaignSender,
+  now: Date = new Date(),
+): CampaignSendRequest {
+  const unsubscribeUrl = `${sender.baseUrl}/unsubscribe/preview`;
+  return {
+    recipientId: `test-${campaign.id}`,
+    to,
+    subject: `[Test] ${campaign.subject}`,
+    email: renderCampaignEmail({ body: `${TEST_NOTE}\n\n${campaign.body}`, unsubscribeUrl, postalAddress: sender.postalAddress }),
+    unsubscribeUrl,
+    oneClickUrl: null,
+    idempotencyKey: `campaign-test-${campaign.id}-${now.getTime()}`,
+  };
 }
 
 export type CampaignReceipt =
@@ -172,7 +197,7 @@ export async function sendCampaignEmail(
         authorization: `Bearer ${sender.apiKey}`,
         "content-type": "application/json",
         // Provider-side dedup: a second try for the same recipient cannot deliver twice.
-        "Idempotency-Key": `campaign-recipient-${req.recipientId}`,
+        "Idempotency-Key": req.idempotencyKey ?? `campaign-recipient-${req.recipientId}`,
       },
       body: JSON.stringify({
         from: sender.from,
@@ -180,10 +205,14 @@ export async function sendCampaignEmail(
         subject: req.subject,
         text: req.email.text,
         html: req.email.html,
-        headers: {
-          "List-Unsubscribe": `<${req.oneClickUrl}>`,
-          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-        },
+        ...(req.oneClickUrl
+          ? {
+              headers: {
+                "List-Unsubscribe": `<${req.oneClickUrl}>`,
+                "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+              },
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(10_000),
     });

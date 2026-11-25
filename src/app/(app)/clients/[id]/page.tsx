@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/layout/page-shell";
 import { ClientDetailCrud } from "@/components/clients/client-detail-crud";
+import { EmailConsentToggle } from "@/components/email/email-consent-toggle";
 import { OnboardingChecklist } from "@/components/clients/onboarding-checklist";
 import { ScoreBadge } from "@/components/ui/score-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -72,6 +73,12 @@ export default async function ClientDetailPage({
             <div className="flex justify-between gap-3 border-b border-card-border py-2">
               <dt className="text-muted">Website</dt>
               <dd className="font-medium">{client.websiteUrl ?? "—"}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-card-border py-2">
+              <dt className="text-muted">Marketing email</dt>
+              <dd>
+                <EmailConsentToggle kind="client" id={client.id} agreed={!!client.emailConsentAt} hasEmail={!!client.email} />
+              </dd>
             </div>
             <div className="flex justify-between gap-3 border-b border-card-border py-2">
               <dt className="text-muted">Targets</dt>

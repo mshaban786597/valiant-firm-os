@@ -256,6 +256,8 @@ model Lead {
   websiteUrl        String?
   phone             String?
   email             String?
+  // When this person agreed to marketing email. Null = did not agree: never added to a campaign.
+  emailConsentAt    DateTime?
   source            String?
   domainAuthority   Int?
   reviewCount       Int?
@@ -380,6 +382,8 @@ model Client {
   businessName     String
   primaryContact   String?
   email            String?
+  // When this person agreed to marketing email. Null = did not agree: never added to a campaign.
+  emailConsentAt   DateTime?
   phone            String?
   websiteUrl       String?
   servicePurchased String?
@@ -1016,6 +1020,8 @@ model Contact {
   clientId        String?
   name            String
   email           String?
+  // When this person agreed to marketing email. Null = did not agree: never added to a campaign.
+  emailConsentAt  DateTime?
   phone           String?
   title           String?
   role            String?

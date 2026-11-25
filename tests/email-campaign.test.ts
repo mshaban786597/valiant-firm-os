@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   CAMPAIGN_PER_RUN,
+  TEST_NOTE,
+  buildTestEmail,
   campaignDailyLimit,
   campaignRecipientAllowed,
   campaignRunBudget,
@@ -18,6 +20,7 @@ import {
   type CampaignSender,
 } from "@/lib/email/campaign";
 import { parseEmails } from "@/lib/email/parse-emails";
+import { recipientDetail, recipientLabel } from "@/lib/email/campaign-labels";
 import { formatNotification } from "@/lib/notifications/dispatch";
 
 const READY = {
@@ -248,5 +251,68 @@ describe("pasted email addresses", () => {
   it("drops duplicates and anything that is not an address", () => {
     expect(parseEmails("a@example.com, A@EXAMPLE.com, hello, @x.com, a@b")).toEqual(["a@example.com"]);
     expect(parseEmails("")).toEqual([]);
+  });
+});
+
+describe("a test copy for the owner", () => {
+  const sender = campaignSender(READY) as CampaignSender;
+  const campaign = { id: "c1", subject: "June news", body: "Hello" };
+  const at = new Date("2026-11-25T10:00:00Z");
+
+  it("is clearly marked as a test and goes only to the given inbox", () => {
+    const req = buildTestEmail(campaign, "me@example.com", sender, at);
+    expect(req.to).toBe("me@example.com");
+    expect(req.subject).toBe("[Test] June news");
+    expect(req.email.text.startsWith(`${TEST_NOTE}\n\nHello`)).toBe(true);
+    expect(req.oneClickUrl).toBeNull();
+  });
+
+  it("uses a fresh key each time, so a second test is not swallowed", () => {
+    const a = buildTestEmail(campaign, "me@example.com", sender, at);
+    const b = buildTestEmail(campaign, "me@example.com", sender, new Date(at.getTime() + 1));
+    expect(a.idempotencyKey).not.toBe(b.idempotencyKey);
+  });
+
+  it("is sent without one-click unsubscribe headers", async () => {
+    let body: Record<string, unknown> = {};
+    let key = "";
+    await sendCampaignEmail(buildTestEmail(campaign, "me@example.com", sender, at), sender, async (_url, init) => {
+      body = JSON.parse(String(init.body));
+      key = (init.headers as Record<string, string>)["Idempotency-Key"]!;
+      return new Response(JSON.stringify({ id: "m" }), { status: 200 });
+    });
+    expect(body.headers).toBeUndefined();
+    expect(body.to).toEqual(["me@example.com"]);
+    expect(key).toBe(`campaign-test-c1-${at.getTime()}`);
+  });
+});
+
+describe("the recipient list", () => {
+  const base = { status: "sent", error: null, sentAt: null, openedAt: null, clickedAt: null };
+  const fmt = () => "TIME";
+
+  it("uses plain words for each status", () => {
+    expect(["pending", "sending", "sent", "failed", "skipped", "unsubscribed", "bounced"].map(recipientLabel)).toEqual([
+      "Waiting",
+      "Sending",
+      "Sent",
+      "Refused",
+      "Skipped",
+      "Unsubscribed",
+      "Bounced",
+    ]);
+    expect(recipientLabel("something-new")).toBe("something-new");
+  });
+
+  it("gives the reason for a skipped or refused address", () => {
+    expect(recipientDetail({ ...base, status: "skipped", error: "Not on the allowed recipient list" }, fmt)).toBe("Not on the allowed recipient list");
+    expect(recipientDetail({ ...base, status: "failed", error: "Invalid address" }, fmt)).toBe("Invalid address");
+  });
+
+  it("shows the latest thing known about a sent email", () => {
+    expect(recipientDetail({ ...base, sentAt: "2026-11-25T10:00:00Z" }, fmt)).toBe("Sent TIME");
+    expect(recipientDetail({ ...base, sentAt: "x", openedAt: "y" }, fmt)).toBe("Opened TIME");
+    expect(recipientDetail({ ...base, sentAt: "x", openedAt: "y", clickedAt: "z" }, fmt)).toBe("Clicked TIME");
+    expect(recipientDetail({ ...base, status: "pending" }, fmt)).toBe("");
   });
 });
