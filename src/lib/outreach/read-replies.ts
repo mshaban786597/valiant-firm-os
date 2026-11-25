@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { recordReply } from "@/lib/outreach/engine";
-import { matchIncoming, type InboxReader } from "@/lib/outreach/inbox";
+import { belongsToOutreach, matchIncoming, type InboxReader } from "@/lib/outreach/inbox";
 import type { ReplyLabel } from "@/lib/outreach/sequence";
 
 /** How far back the inbox is searched. Anything older was handled by an earlier run. */
@@ -16,11 +16,11 @@ export interface RecordedReply {
 }
 
 export interface ReadSummary {
-  /** Messages looked at in this run. */
+  /** Messages opened in this run: only ones that belong to outreach. */
   checked: number;
   replies: number;
   bounces: number;
-  /** Mail that has nothing to do with outreach: skipped, never stored. */
+  /** Mail that has nothing to do with outreach: never opened, marked or stored. */
   ignored: number;
   /** Already recorded by an earlier run. */
   duplicates: number;
@@ -59,11 +59,14 @@ export async function readReplies(input: {
 
   const now = input.now ?? new Date();
   const since = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-  const mails = await input.reader.listUnhandled(since, PER_RUN);
+  const known = new Set(recipients.keys());
+  const { mails, skipped } = await input.reader.listUnhandled(since, PER_RUN, (head) => belongsToOutreach(head, known));
   summary.checked = mails.length;
+  summary.ignored = skipped;
 
   for (const mail of mails) {
-    const match = matchIncoming(mail, recipients.keys());
+    const match = matchIncoming(mail, known);
+    // A delivery failure about some other address: not ours, nothing to record.
     if (match.kind === "ignored") {
       summary.ignored++;
       await input.reader.markHandled(mail.uid);

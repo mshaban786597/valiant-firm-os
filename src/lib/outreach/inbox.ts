@@ -3,18 +3,24 @@ import { mailboxConfig } from "@/lib/outreach/mailbox";
 /**
  * Reading replies from the outreach mailbox.
  *
- * Only mail that belongs to outreach is ever looked at: a message from an
- * address an outreach email was sent to, or a delivery failure naming such an
- * address. Everything else in the mailbox is skipped and never stored.
+ * The mailbox may be a person's everyday mailbox, so the rule is strict: only
+ * the sender and subject of a message are looked at first, and the content is
+ * opened only when the message belongs to outreach (it comes from an address an
+ * outreach email was sent to, or it is a delivery failure). Every other message
+ * is left exactly as it is: not opened, not marked, not stored.
  */
 
 type Env = Record<string, string | undefined>;
 
-export interface IncomingMail {
-  /** Server id of the message inside the inbox. */
-  uid: number;
+/** What is known about a message before it is opened. */
+export interface MailHead {
   from: string;
   subject: string;
+}
+
+export interface IncomingMail extends MailHead {
+  /** Server id of the message inside the inbox. */
+  uid: number;
   text: string;
   date: Date;
   messageId?: string;
@@ -23,8 +29,11 @@ export interface IncomingMail {
 
 /** The slice of a mailbox this module needs (IMAP in production, a fake in tests). */
 export interface InboxReader {
-  /** Messages received since the given date that were not marked as handled. */
-  listUnhandled(since: Date, limit: number): Promise<IncomingMail[]>;
+  /**
+   * Messages received since the given date that `wants` accepts and that were
+   * not handled before. `skipped` counts the messages `wants` turned down.
+   */
+  listUnhandled(since: Date, limit: number, wants: (head: MailHead) => boolean): Promise<{ mails: IncomingMail[]; skipped: number }>;
   markHandled(uid: number): Promise<void>;
   close(): Promise<void>;
 }
@@ -33,6 +42,21 @@ export const HANDLED_FLAG = "$VFHandled";
 
 const DELIVERY_FAILURE_FROM = /(mailer-daemon|postmaster|mail delivery (sub)?system)/i;
 const DELIVERY_FAILURE_SUBJECT = /(undeliver|delivery (status notification|has failed|failure)|returned mail|failure notice)/i;
+
+/** Pure: the bare address in a From header, lower-cased. */
+export function fromAddress(from: string): string {
+  return (from.match(/[^\s<>"]+@[^\s<>"]+/) ?? [""])[0].toLowerCase();
+}
+
+/** Pure: does this look like a mail server reporting a failed delivery? */
+export function isDeliveryFailure(head: MailHead): boolean {
+  return DELIVERY_FAILURE_FROM.test(head.from) || DELIVERY_FAILURE_SUBJECT.test(head.subject);
+}
+
+/** Pure: may this message be opened? Only a reply from one of our recipients, or a delivery failure. */
+export function belongsToOutreach(head: MailHead, recipients: ReadonlySet<string>): boolean {
+  return isDeliveryFailure(head) || recipients.has(fromAddress(head.from));
+}
 
 /** Lines that start the quoted copy of our own email in a reply. */
 const QUOTE_START = [
@@ -66,9 +90,9 @@ export type InboxMatch =
 /** Pure: decide what an incoming message is, given the addresses outreach was sent to. */
 export function matchIncoming(mail: Pick<IncomingMail, "from" | "subject" | "text">, recipients: Iterable<string>): InboxMatch {
   const known = new Set(Array.from(recipients, (r) => r.toLowerCase()));
-  const from = (mail.from.match(/[^\s<>"]+@[^\s<>"]+/) ?? [""])[0].toLowerCase();
+  const from = fromAddress(mail.from);
 
-  if (DELIVERY_FAILURE_FROM.test(mail.from) || DELIVERY_FAILURE_SUBJECT.test(mail.subject)) {
+  if (isDeliveryFailure(mail)) {
     const text = mail.text.toLowerCase();
     const email = Array.from(known).find((r) => text.includes(r));
     return email
@@ -127,15 +151,31 @@ export async function openInbox(env: Env = process.env): Promise<InboxReader | n
   }
 
   return {
-    async listUnhandled(since, limit) {
-      const found = await client.search({ since, unKeyword: HANDLED_FLAG }, { uid: true });
-      const uids = (found || []).slice(-limit);
-      const out: IncomingMail[] = [];
-      for (const uid of uids) {
+    async listUnhandled(since, limit, wants) {
+      const found = await client.search({ since }, { uid: true });
+      const uids = found || [];
+      if (uids.length === 0) return { mails: [], skipped: 0 };
+
+      // Sender and subject only. Nothing is opened at this step.
+      const wanted: number[] = [];
+      let skipped = 0;
+      for await (const msg of client.fetch(uids, { envelope: true, flags: true }, { uid: true })) {
+        if (msg.flags?.has(HANDLED_FLAG)) continue;
+        const sender = msg.envelope?.from?.[0];
+        const head: MailHead = {
+          from: sender ? `${sender.name ?? ""} <${sender.address ?? ""}>` : "",
+          subject: msg.envelope?.subject ?? "",
+        };
+        if (wants(head)) wanted.push(msg.uid);
+        else skipped++;
+      }
+
+      const mails: IncomingMail[] = [];
+      for (const uid of wanted.slice(0, limit)) {
         const msg = await client.fetchOne(String(uid), { source: true }, { uid: true });
         if (!msg || !msg.source) continue;
         const parsed = await simpleParser(msg.source);
-        out.push({
+        mails.push({
           uid,
           from: parsed.from?.text ?? "",
           subject: parsed.subject ?? "",
@@ -145,7 +185,7 @@ export async function openInbox(env: Env = process.env): Promise<InboxReader | n
           inReplyTo: parsed.inReplyTo ?? undefined,
         });
       }
-      return out;
+      return { mails, skipped };
     },
     async markHandled(uid) {
       // Some servers refuse custom flags; duplicates are also prevented in the database.

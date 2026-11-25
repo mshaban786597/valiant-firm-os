@@ -10,7 +10,7 @@ const { db, recordReply } = vi.hoisted(() => ({
 vi.mock("@/lib/prisma", () => ({ prisma: db }));
 vi.mock("@/lib/outreach/engine", () => ({ recordReply }));
 
-import { imapSettings, matchIncoming, stripQuoted, type IncomingMail, type InboxReader } from "@/lib/outreach/inbox";
+import { belongsToOutreach, imapSettings, matchIncoming, stripQuoted, type IncomingMail, type InboxReader, type MailHead } from "@/lib/outreach/inbox";
 import { readReplies } from "@/lib/outreach/read-replies";
 import { classifyReply } from "@/lib/outreach/sequence";
 
@@ -81,6 +81,20 @@ describe("deciding what an incoming message is", () => {
   });
 });
 
+describe("which messages may be opened", () => {
+  const known = new Set(["owner@prospect.example"]);
+  it("allows a reply from an address outreach was sent to", () => {
+    expect(belongsToOutreach({ from: "Dana <Owner@Prospect.example>", subject: "Re: Quick idea" }, known)).toBe(true);
+  });
+  it("allows a delivery failure, which has to be opened to see whose address failed", () => {
+    expect(belongsToOutreach({ from: "MAILER-DAEMON@mail.example", subject: "Undelivered Mail Returned to Sender" }, known)).toBe(true);
+  });
+  it("refuses everything else", () => {
+    expect(belongsToOutreach({ from: "client@company.example", subject: "Re: Quick idea" }, known)).toBe(false);
+    expect(belongsToOutreach({ from: "", subject: "" }, known)).toBe(false);
+  });
+});
+
 describe("mailbox reading settings", () => {
   it("needs the mailbox and defaults to the Hostinger server", () => {
     expect(imapSettings({})).toBeNull();
@@ -102,13 +116,17 @@ describe("recording replies from the mailbox", () => {
     date: new Date("2026-11-25T10:00:00Z"),
     ...over,
   });
-  const readerWith = (mails: IncomingMail[]): InboxReader & { handled: number[]; listed: number } => {
+  /** A fake inbox that, like the real one, hands over only the messages `wants` accepts. */
+  const readerWith = (mails: IncomingMail[]): InboxReader & { handled: number[]; listed: number; opened: number[] } => {
     const r = {
       handled: [] as number[],
+      opened: [] as number[],
       listed: 0,
-      async listUnhandled() {
+      async listUnhandled(_since: Date, _limit: number, wants: (head: MailHead) => boolean) {
         r.listed++;
-        return mails;
+        const accepted = mails.filter((m) => wants(m));
+        r.opened = accepted.map((m) => m.uid);
+        return { mails: accepted, skipped: mails.length - accepted.length };
       },
       async markHandled(uid: number) {
         r.handled.push(uid);
@@ -149,12 +167,27 @@ describe("recording replies from the mailbox", () => {
     expect(reader.handled).toEqual([7]);
   });
 
-  it("skips unrelated mail without storing it", async () => {
-    const reader = readerWith([mail({ uid: 3, from: "billing@host.example", subject: "Invoice", text: "Your invoice" })]);
+  it("never opens, marks or stores mail that is not about outreach", async () => {
+    const reader = readerWith([
+      mail({ uid: 3, from: "billing@host.example", subject: "Invoice", text: "Your invoice" }),
+      mail({ uid: 5, from: "A Client <client@company.example>", subject: "Question about our project", text: "Private" }),
+    ]);
     const r = await readReplies({ organizationId: "org", reader });
     expect(recordReply).not.toHaveBeenCalled();
-    expect(r).toMatchObject({ checked: 1, replies: 0, ignored: 1 });
-    expect(reader.handled).toEqual([3]);
+    expect(r).toMatchObject({ checked: 0, replies: 0, ignored: 2 });
+    expect(reader.opened).toEqual([]);
+    expect(reader.handled).toEqual([]);
+  });
+
+  it("opens only the outreach reply among everyday mail", async () => {
+    const reader = readerWith([
+      mail({ uid: 3, from: "billing@host.example", subject: "Invoice", text: "Your invoice" }),
+      mail({ uid: 8 }),
+    ]);
+    const r = await readReplies({ organizationId: "org", reader });
+    expect(reader.opened).toEqual([8]);
+    expect(reader.handled).toEqual([8]);
+    expect(r).toMatchObject({ checked: 1, replies: 1, ignored: 1 });
   });
 
   it("records the same message only once", async () => {
