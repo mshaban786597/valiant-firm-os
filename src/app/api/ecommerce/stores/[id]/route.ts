@@ -6,10 +6,8 @@ import { writeAuditLog } from "@/lib/audit";
 import { storeUpdateSchema } from "@/lib/schemas/ecommerce";
 
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -26,10 +24,8 @@ export async function GET(
   return NextResponse.json({ store });
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("ecommerce.write");
   if (!org.ok) return org.response;
 
@@ -72,10 +68,8 @@ export async function PATCH(
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("ecommerce.write");
   if (!org.ok) return org.response;
 

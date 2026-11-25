@@ -10,10 +10,8 @@ import { runTrigger } from "@/lib/automations/engine";
  * `?org=<slug>` or a top-level `organizationSlug` in the body, verifies the
  * provider signature, logs the event, and fires `webhook_received` workflows.
  */
-export async function POST(
-  req: Request,
-  { params }: { params: { provider: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ provider: string }> }) {
+  const params = await props.params;
   const provider = getProvider(params.provider);
   if (!provider) {
     return NextResponse.json({ error: "Unknown provider" }, { status: 404 });

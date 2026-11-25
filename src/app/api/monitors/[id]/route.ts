@@ -5,10 +5,8 @@ import { writeAuditLog } from "@/lib/audit";
 import { monitorUpdateSchema } from "@/lib/schemas/monitoring";
 import { backfillIncidentTasks } from "@/lib/clients/link-site";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("monitor.write");
   if (!org.ok) return org.response;
 
@@ -53,10 +51,8 @@ export async function PATCH(
   return NextResponse.json({ monitor, tasksCreated });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("monitor.write");
   if (!org.ok) return org.response;
 

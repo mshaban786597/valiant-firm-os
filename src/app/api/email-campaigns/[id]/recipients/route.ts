@@ -5,10 +5,8 @@ import { writeAuditLog } from "@/lib/audit";
 import { emailRecipientsSchema } from "@/lib/schemas/email-campaign";
 import { consentingAudience, nobodyAgreedMessage, type Candidate } from "@/lib/email/audience";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("email.write");
   if (!org.ok) return org.response;
 

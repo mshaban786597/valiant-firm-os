@@ -5,7 +5,8 @@ import { notify } from "@/lib/notifications/dispatch";
 import { queueOutreachDraft } from "@/lib/prospecting/drafts";
 
 /** Draft an outreach email for a lead and queue it for human approval. Never sends. */
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("approval.request");
   if (!org.ok) return org.response;
 

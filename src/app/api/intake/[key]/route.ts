@@ -24,7 +24,8 @@ async function siteFor(key: string) {
   });
 }
 
-export async function OPTIONS(req: Request, { params }: { params: { key: string } }) {
+export async function OPTIONS(req: Request, props: { params: Promise<{ key: string }> }) {
+  const params = await props.params;
   const site = await siteFor(params.key);
   if (!site) return new NextResponse(null, { status: 404 });
   return new NextResponse(null, { status: 204, headers: cors(site.domain, req.headers.get("origin")) });
@@ -36,7 +37,8 @@ export async function OPTIONS(req: Request, { params }: { params: { key: string 
  * post. Send header "x-intake-test: 1" to store a test enquiry that is marked
  * as a test and alerts nobody.
  */
-export async function POST(req: Request, { params }: { params: { key: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ key: string }> }) {
+  const params = await props.params;
   const site = await siteFor(params.key);
   if (!site) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const headers = cors(site.domain, req.headers.get("origin"));

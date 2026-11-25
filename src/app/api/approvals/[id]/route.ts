@@ -53,7 +53,8 @@ async function startApprovedOutreach(approval: {
   return `Approved — send ${first.status}${first.cancelReason ? ` (${first.cancelReason})` : ""}`;
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("approval.decide");
   if (!org.ok) return org.response;
 

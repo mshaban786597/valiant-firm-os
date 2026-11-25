@@ -5,7 +5,7 @@ const nextConfig = {
   // per CPU, or the host kills the build.
   ...(process.env.VERCEL ? {} : { experimental: { cpus: 1 } }),
   // The app serves its few images as they are. The image optimizer is not
-  // used, and middleware refuses its endpoint, so it cannot be reached.
+  // used, and the proxy (src/proxy.ts) refuses its endpoint, so it cannot be reached.
   images: { unoptimized: true },
   async headers() {
     return [

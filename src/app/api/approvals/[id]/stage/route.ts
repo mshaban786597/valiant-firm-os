@@ -22,7 +22,8 @@ const schema = z.object({
  *  - rollback record that the change was rolled back
  * Each stage is stored independently, including failures.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("approval.decide");
   if (!org.ok) return org.response;
 

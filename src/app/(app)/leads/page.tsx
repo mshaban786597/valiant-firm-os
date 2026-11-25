@@ -10,11 +10,12 @@ import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
 
-export default async function LeadsPage({
-  searchParams,
-}: {
-  searchParams?: Record<string, string | undefined>;
-}) {
+export default async function LeadsPage(
+  props: {
+    searchParams?: Promise<Record<string, string | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const isDemo = getDataScope().isDemo;
 

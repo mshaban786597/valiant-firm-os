@@ -26,11 +26,12 @@ function timeAgo(date: Date) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default async function ActivityPage({
-  searchParams,
-}: {
-  searchParams: { entity?: string };
-}) {
+export default async function ActivityPage(
+  props: {
+    searchParams: Promise<{ entity?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const entity = searchParams.entity && searchParams.entity !== "All" ? searchParams.entity : null;
 

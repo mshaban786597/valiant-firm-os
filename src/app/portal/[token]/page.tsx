@@ -17,11 +17,12 @@ function ExpiredNotice() {
   );
 }
 
-export default async function PublicPortalPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default async function PublicPortalPage(
+  props: {
+    params: Promise<{ token: string }>;
+  }
+) {
+  const params = await props.params;
   const record = await prisma.clientPortalToken.findUnique({
     where: { token: params.token },
     select: {

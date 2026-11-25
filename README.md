@@ -21,7 +21,7 @@ valiant-agency-os/
 │  │  ├─ api/                      # Next route handlers (REST + AI + webhook)
 │  │  ├─ login/                    # Auth UI (+ Suspense wrapper)
 │  │  ├─ layout.tsx / globals.css
-│  │  └─ middleware.ts             # JWT cookie gate + route protection
+│  │  └─ proxy.ts                  # JWT cookie gate + route protection
 │  ├─ components/                  # Shell + KPI cards + charts + boards + AI panels
 │  └─ lib/                         # Prisma, auth, audits, AI engines, schemas
 └─ .env.example

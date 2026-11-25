@@ -8,7 +8,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Unsubscribe", robots: { index: false, follow: false } };
 
 /** Public page a recipient lands on from the unsubscribe link in an email. */
-export default async function UnsubscribePage({ params }: { params: { token: string } }) {
+export default async function UnsubscribePage(props: { params: Promise<{ token: string }> }) {
+  const params = await props.params;
   const token = decodeURIComponent(params.token);
   const recipientId = readUnsubscribeToken(token, authSecret());
   const recipient = recipientId ? await recipientForUnsubscribe(recipientId) : null;

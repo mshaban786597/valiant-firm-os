@@ -38,7 +38,7 @@ const PROTECTED_PREFIXES = [
   "/settings",
 ];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // The image optimizer is not used by this app. Refuse its endpoint outright.
   if (req.nextUrl.pathname.startsWith("/_next/image")) {
     return new NextResponse(null, { status: 404 });

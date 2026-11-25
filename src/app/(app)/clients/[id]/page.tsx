@@ -11,11 +11,12 @@ import { money } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function ClientDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ClientDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const client = await prisma.client.findFirst({

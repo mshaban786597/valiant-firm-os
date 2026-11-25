@@ -8,7 +8,8 @@ import { disconnectGscProperty, syncGscProperty, testGscAccess } from "@/lib/int
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 
@@ -61,7 +62,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     : NextResponse.json({ ok, message, error: message }, { status: 409 });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 

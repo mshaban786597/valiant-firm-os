@@ -13,7 +13,10 @@ import { getDataScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
-export default async function IntegrationsPage({ searchParams }: { searchParams?: { ubersuggest?: string; reason?: string } }) {
+export default async function IntegrationsPage(
+  props: { searchParams?: Promise<{ ubersuggest?: string; reason?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const signedIn = await signedInTools(organizationId);
   const needsReauth = (

@@ -4,7 +4,7 @@ import { readAuthSecret } from "@/lib/env";
  * The auth signing secret. Supports NEXTAUTH_SECRET (v4) and AUTH_SECRET (v5).
  *
  * In development it falls back to a fixed insecure value so local dev works
- * without setup. In production it returns "" when unset — callers (middleware)
+ * without setup. In production it returns "" when unset — callers (the proxy)
  * stay resilient, and the /api/health endpoint reports the misconfiguration
  * clearly rather than the app crashing on every request.
  */

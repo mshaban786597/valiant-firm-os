@@ -8,10 +8,8 @@ import { syncGbpLocation } from "@/lib/integrations/gbp-sync";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 
@@ -62,10 +60,8 @@ export async function PATCH(
   return NextResponse.json({ location });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 

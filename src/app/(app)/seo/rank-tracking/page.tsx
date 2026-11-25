@@ -71,11 +71,12 @@ function Trend({ row }: { row: RankRow }) {
   );
 }
 
-export default async function RankTrackingPage({
-  searchParams,
-}: {
-  searchParams?: Record<string, string | undefined>;
-}) {
+export default async function RankTrackingPage(
+  props: {
+    searchParams?: Promise<Record<string, string | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
 
   const properties = await prisma.gscProperty.findMany({

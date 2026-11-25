@@ -11,7 +11,8 @@ export const runtime = "nodejs";
  * Uses the same switches and the same allowed-recipient list as a real send,
  * and never touches the campaign's recipients.
  */
-export async function POST(_req: Request, { params }: { params: { id: string } }) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("email.write");
   if (!org.ok) return org.response;
 

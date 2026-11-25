@@ -15,7 +15,8 @@ const schema = z.object({ action: z.enum(["enable", "rotate", "disable", "test"]
  * replace the address, switch it off, or send a test enquiry through the same
  * path a real form uses.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("client.write");
   if (!org.ok) return org.response;
   const parsed = schema.safeParse(await req.json().catch(() => null));

@@ -5,11 +5,12 @@ import { SearchBox } from "@/components/search/search-box";
 import { globalSearch } from "@/lib/search";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
-}) {
+export default async function SearchPage(
+  props: {
+    searchParams: Promise<{ q?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const q = searchParams.q ?? "";
   const results = q ? await globalSearch(organizationId, q) : null;

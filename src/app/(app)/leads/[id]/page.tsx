@@ -10,11 +10,12 @@ import { mapLeadToScoreInput } from "@/lib/mappers/lead";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function LeadDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function LeadDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const lead = await prisma.lead.findFirst({

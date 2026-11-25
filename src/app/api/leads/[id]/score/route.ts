@@ -8,10 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { pickAssignee } from "@/lib/automations/assign";
 import { runTrigger } from "@/lib/automations/engine";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
 

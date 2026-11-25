@@ -66,7 +66,8 @@ function Breakdown({ title, rows, total }: { title: string; rows: { key: string;
   );
 }
 
-export default async function AnalyticsPage({ searchParams }: { searchParams?: { p?: string } }) {
+export default async function AnalyticsPage(props: { searchParams?: Promise<{ p?: string }> }) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const properties = await prisma.ga4Property.findMany({
     where: { organizationId },

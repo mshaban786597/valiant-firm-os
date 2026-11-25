@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   if (url.searchParams.get("error")) return failed("The sign-in was not approved at Ubersuggest");
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const proofRaw = open(cookies().get(OAUTH_COOKIE)?.value);
+  const proofRaw = open((await cookies()).get(OAUTH_COOKIE)?.value);
   if (!code || !state || !proofRaw) return failed("The sign-in could not be verified. Start again from Connect.");
 
   let proof: { state?: string; verifier?: string; redirectUri?: string; organizationId?: string };

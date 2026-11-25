@@ -11,7 +11,8 @@ async function load(id: string, organizationId: string) {
 }
 
 /** Pause or resume a saved search. */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
   const parsed = prospectTargetPatchSchema.safeParse(await req.json().catch(() => null));
@@ -32,7 +33,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 /** Remove a saved search. Prospects it already found are kept. */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
   const target = await load(params.id, org.organizationId);

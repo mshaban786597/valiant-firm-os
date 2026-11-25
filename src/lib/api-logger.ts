@@ -1,7 +1,7 @@
 /**
  * Lightweight structured request/error logging for API routes.
  *
- * Next middleware is excluded from /api, so logging is opt-in per route via
+ * The Next proxy (src/proxy.ts) is excluded from /api, so logging is opt-in per route via
  * `withApiLogging`. Emits one JSON line per request (method, path, status,
  * duration, orgId when known) — parseable by any log drain, no new deps, and
  * never logs bodies, secrets, or query strings with sensitive params.

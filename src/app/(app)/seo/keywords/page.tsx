@@ -8,11 +8,12 @@ import { requireSessionOrg } from "@/lib/session-org";
 
 export const dynamic = "force-dynamic";
 
-export default async function SeoKeywordsPage({
-  searchParams,
-}: {
-  searchParams?: Record<string, string | undefined>;
-}) {
+export default async function SeoKeywordsPage(
+  props: {
+    searchParams?: Promise<Record<string, string | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
 
   const properties = await prisma.gscProperty.findMany({

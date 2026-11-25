@@ -12,14 +12,17 @@ import { LEAD_SOURCE_LABEL, LEAD_STATUSES, LEAD_STATUS_LABEL, leadSummary } from
 
 export const dynamic = "force-dynamic";
 
-function appOrigin(): string {
+async function appOrigin(): Promise<string> {
   const configured = process.env.NEXTAUTH_URL;
   if (configured) return configured.replace(/\/$/, "");
-  const h = headers();
+  const h = await headers();
   return `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host") ?? "localhost:3000"}`;
 }
 
-export default async function InboxPage({ searchParams }: { searchParams?: { site?: string; status?: string; kind?: string } }) {
+export default async function InboxPage(
+  props: { searchParams?: Promise<{ site?: string; status?: string; kind?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const siteFilter = searchParams?.site || null;
   const statusFilter = searchParams?.status && (LEAD_STATUSES as readonly string[]).indexOf(searchParams.status) !== -1 ? searchParams.status : null;
@@ -53,7 +56,7 @@ export default async function InboxPage({ searchParams }: { searchParams?: { sit
   sites.forEach((s) => (siteById[s.id] = s));
   const stats: Record<string, { n: number; last: Date | null }> = {};
   perSite.forEach((g) => (stats[g.siteId] = { n: g._count._all, last: g._max.receivedAt }));
-  const origin = appOrigin();
+  const origin = await appOrigin();
   const intakeSites: IntakeSite[] = sites.map((s) => ({
     id: s.id,
     domain: s.domain,

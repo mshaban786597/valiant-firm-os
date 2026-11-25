@@ -7,7 +7,8 @@ import { rankRentUpdateSchema } from "@/lib/schemas/rank-rent";
 export const runtime = "nodejs";
 
 /** Update the stage, the renter and the monthly rent of a rank-and-rent site. */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("client.write");
   if (!org.ok) return org.response;
 
@@ -38,7 +39,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 /** Remove a site from the rank-and-rent list. Its checks and analytics are kept. */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("client.write");
   if (!org.ok) return org.response;
   const asset = await prisma.rankRentAsset.findFirst({ where: { id: params.id, organizationId: org.organizationId } });

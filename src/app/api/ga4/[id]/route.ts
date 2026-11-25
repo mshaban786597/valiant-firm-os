@@ -14,7 +14,8 @@ const schema = z.object({
 });
 
 /** Sync one Analytics property now, or link it to a client. */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 

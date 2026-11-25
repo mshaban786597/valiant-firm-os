@@ -16,7 +16,8 @@ export const runtime = "nodejs";
  * (fixture) monitors, so simulated outages can never touch live incidents,
  * tasks or alerts. A re-run inside the check window is recorded as a retry.
  */
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("monitor.write");
   if (!org.ok) return org.response;
 

@@ -6,11 +6,12 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function GbpDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function GbpDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const location = await prisma.gbpLocation.findFirst({

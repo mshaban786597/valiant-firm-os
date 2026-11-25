@@ -13,7 +13,8 @@ const schema = z.object({
 });
 
 /** Change the status or the notes of one website enquiry. */
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
   const parsed = schema.safeParse(await req.json().catch(() => null));
@@ -41,7 +42,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 /** Delete an enquiry for good (for example a test, or on a person's request to be removed). */
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.delete");
   if (!org.ok) return org.response;
   const lead = await prisma.siteLead.findFirst({ where: { id: params.id, organizationId: org.organizationId }, select: { id: true, isTest: true } });

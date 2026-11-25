@@ -77,7 +77,8 @@ function StatTable({ title, rows, label, hrefFor }: { title: string; rows: StatR
   );
 }
 
-export default async function OutreachPage({ searchParams }: { searchParams?: { category?: string; niche?: string } }) {
+export default async function OutreachPage(props: { searchParams?: Promise<{ category?: string; niche?: string }> }) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
   const scope = getDataScope();
   const scoped = { organizationId, isDemo: scope.isDemo };
