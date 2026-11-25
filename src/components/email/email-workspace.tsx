@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useToast } from "@/components/ui/toast-provider";
 import { errorMessageFromResponse } from "@/lib/api-error";
+import { parseEmails } from "@/lib/email/parse-emails";
 
 export type CampaignRow = {
   id: string;
@@ -14,6 +15,10 @@ export type CampaignRow = {
   subject: string;
   status: string;
   recipientCount: number;
+  /** Emails the email service accepted. */
+  delivered: number;
+  /** What happened to the recipients once sending started; null for a draft. */
+  progress: string | null;
   opens: number;
   clicks: number;
   unsubscribes: number;
@@ -26,20 +31,37 @@ function statusVariant(status: string) {
   return "warning" as const;
 }
 
-export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
+export function EmailWorkspace({
+  campaigns,
+  sending,
+}: {
+  campaigns: CampaignRow[];
+  sending: { on: boolean; text: string };
+}) {
   const router = useRouter();
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pasteFor, setPasteFor] = useState<string | null>(null);
+  const [pasted, setPasted] = useState("");
 
-  async function addRecipients(id: string, source: "clients" | "leads") {
+  async function addPasted() {
+    const emails = parseEmails(pasted);
+    if (!pasteFor || emails.length === 0) return toast.error("No email address found.");
+    const id = pasteFor;
+    setPasteFor(null);
+    setPasted("");
+    await addRecipients(id, { emails });
+  }
+
+  async function addRecipients(id: string, what: { source: "clients" | "leads" } | { emails: string[] }) {
     setBusyId(id);
     try {
       const res = await fetch(`/api/email-campaigns/${id}/recipients`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source }),
+        body: JSON.stringify(what),
       });
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
       const data = (await res.json()) as { added: number; total: number };
@@ -60,12 +82,12 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
         body: JSON.stringify({ action: "send" }),
       });
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
-      const data = (await res.json()) as { dispatched: boolean; recipientCount: number };
-      toast.success(
-        data.dispatched
-          ? `Sent to ${data.recipientCount} recipients.`
-          : `Simulated send to ${data.recipientCount} (no ESP configured).`,
-      );
+      const data = (await res.json()) as { sent: number; refused: number; skipped: number; remaining: number };
+      const parts = [`${data.sent} sent`];
+      if (data.remaining) parts.push(`${data.remaining} waiting, they go out over the next hours`);
+      if (data.refused) parts.push(`${data.refused} refused`);
+      if (data.skipped) parts.push(`${data.skipped} skipped`);
+      toast.success(`${parts.join(" · ")}.`);
       router.refresh();
     } finally {
       setBusyId(null);
@@ -89,7 +111,13 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted">
+          <span className={sending.on ? "font-semibold text-emerald-700 dark:text-emerald-400" : "font-semibold text-amber-700 dark:text-amber-400"}>
+            {sending.on ? "Sending is on." : "Sending is off."}
+          </span>{" "}
+          {sending.text}
+        </p>
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -107,9 +135,7 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
       ) : (
         <div className="space-y-3">
           {campaigns.map((c) => {
-            const openRate = c.recipientCount
-              ? Math.round((c.opens / c.recipientCount) * 100)
-              : 0;
+            const openRate = c.delivered ? Math.round((c.opens / c.delivered) * 100) : null;
             const busy = busyId === c.id;
             const isDraft = c.status === "draft";
             return (
@@ -121,15 +147,19 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
                       <StatusBadge label={c.status} variant={statusVariant(c.status)} />
                     </div>
                     <p className="mt-0.5 text-xs text-muted">{c.subject}</p>
+                    {c.progress && <p className="mt-1 text-xs text-muted">{c.progress}</p>}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {isDraft && (
                       <>
-                        <button type="button" disabled={busy} onClick={() => addRecipients(c.id, "clients")} className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50">
+                        <button type="button" disabled={busy} onClick={() => addRecipients(c.id, { source: "clients" })} className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50">
                           + Clients
                         </button>
-                        <button type="button" disabled={busy} onClick={() => addRecipients(c.id, "leads")} className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50">
+                        <button type="button" disabled={busy} onClick={() => addRecipients(c.id, { source: "leads" })} className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50">
                           + Leads
+                        </button>
+                        <button type="button" disabled={busy} onClick={() => setPasteFor(c.id)} className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50">
+                          + Emails
                         </button>
                         <button type="button" disabled={busy} onClick={() => send(c.id)} className="rounded-lg bg-valiant px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
                           Send
@@ -144,7 +174,7 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
                   <Metric label="Recipients" value={String(c.recipientCount)} />
                   <Metric label="Opens" value={String(c.opens)} />
-                  <Metric label="Open rate" value={`${openRate}%`} />
+                  <Metric label="Open rate" value={openRate === null ? "—" : `${openRate}%`} />
                   <Metric label="Clicks" value={String(c.clicks)} />
                   <Metric label="Unsubs" value={String(c.unsubscribes)} />
                 </div>
@@ -153,6 +183,29 @@ export function EmailWorkspace({ campaigns }: { campaigns: CampaignRow[] }) {
           })}
         </div>
       )}
+
+      <Modal open={pasteFor !== null} title="Add email addresses" onClose={() => setPasteFor(null)}>
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold text-muted">
+            One address per line, or separated by commas
+            <textarea
+              rows={5}
+              value={pasted}
+              onChange={(e) => setPasted(e.target.value)}
+              className="mt-1 w-full rounded-lg border border-card-border bg-background px-3 py-2 text-sm"
+            />
+          </label>
+          <p className="text-xs text-muted">Only add people who agreed to get email from you.</p>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setPasteFor(null)} className="rounded-lg border border-card-border px-3 py-2 text-xs font-semibold">
+              Cancel
+            </button>
+            <button type="button" onClick={addPasted} className="rounded-lg bg-valiant px-3 py-2 text-xs font-semibold text-white">
+              Add
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <NewCampaignModal
         open={open}

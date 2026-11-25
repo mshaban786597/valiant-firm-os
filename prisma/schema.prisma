@@ -924,21 +924,25 @@ model EmailCampaign {
 }
 
 model EmailRecipient {
-  id         String    @id @default(uuid())
-  campaignId String
-  leadId     String?
-  clientId   String?
-  email      String
-  status     String    @default("pending") // pending | sent | opened | clicked | unsubscribed
-  sentAt     DateTime?
-  openedAt   DateTime?
-  clickedAt  DateTime?
-  createdAt  DateTime  @default(now())
+  id                String    @id @default(uuid())
+  campaignId        String
+  leadId            String?
+  clientId          String?
+  email             String
+  status            String    @default("pending") // pending | sending | sent | failed | skipped | unsubscribed | bounced
+  sentAt            DateTime?
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  // The email service's id for this email, and why it was refused or skipped.
+  providerMessageId String?
+  error             String?
 
   campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([campaignId])
   @@index([email])
+  @@index([providerMessageId])
 }
 
 // Pre-auth login throttle. Not org-scoped (identity is not yet known); keyed by

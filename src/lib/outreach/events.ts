@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { applyCampaignEvent } from "@/lib/email/campaign-run";
 
 /**
  * Delivery events from the email provider (Resend, signed with Svix):
@@ -81,7 +82,11 @@ export async function applyEmailEvent(input: {
     where: { providerMessageId: input.providerMessageId },
     select: { id: true, organizationId: true, leadId: true, toEmail: true, deliveredAt: true, openedAt: true, clickedAt: true },
   });
-  if (!send) return { matched: false, type: input.type };
+  if (!send) {
+    // Not an outreach email: it may be a campaign email.
+    const campaign = await applyCampaignEvent({ type: input.type, providerMessageId: input.providerMessageId, at });
+    return { matched: campaign.matched, type: input.type, suppressed: campaign.suppressed };
+  }
 
   if (input.type === "delivered") {
     if (!send.deliveredAt) await prisma.outreachSend.update({ where: { id: send.id }, data: { deliveredAt: at } });

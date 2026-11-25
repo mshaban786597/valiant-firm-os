@@ -4,6 +4,12 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { emailCampaignUpdateSchema } from "@/lib/schemas/email-campaign";
+import { notify } from "@/lib/notifications/dispatch";
+import { campaignSender, countsLine } from "@/lib/email/campaign";
+import { processCampaign } from "@/lib/email/campaign-run";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function GET(
   _req: Request,
@@ -29,7 +35,7 @@ export async function PATCH(
 
   const existing = await prisma.emailCampaign.findFirst({
     where: { id: params.id, organizationId: org.organizationId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, name: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -40,12 +46,51 @@ export async function PATCH(
   }
 
   if (parsed.data.action === "send") {
-    // Campaign sending is not wired to an email provider. Refuse rather than
-    // mark it sent or show engagement that never happened.
-    return NextResponse.json(
-      { error: "Email campaign sending is not connected yet. Nothing was sent." },
-      { status: 409 },
-    );
+    // Refuse rather than mark it sent when nothing can really go out.
+    const sender = campaignSender();
+    if (!sender.ready) {
+      return NextResponse.json({ error: `${sender.reason} Nothing was sent.` }, { status: 409 });
+    }
+    if (existing.status !== "draft") {
+      return NextResponse.json({ error: "This campaign was already sent." }, { status: 409 });
+    }
+    const waiting = await prisma.emailRecipient.count({ where: { campaignId: existing.id, status: "pending" } });
+    if (waiting === 0) {
+      return NextResponse.json({ error: "Add recipients first. Nothing was sent." }, { status: 400 });
+    }
+    // Claim the campaign so two clicks cannot start it twice.
+    const claimed = await prisma.emailCampaign.updateMany({
+      where: { id: existing.id, organizationId: org.organizationId, status: "draft" },
+      data: { status: "sending" },
+    });
+    if (claimed.count === 0) {
+      return NextResponse.json({ error: "This campaign was already sent." }, { status: 409 });
+    }
+    await writeAuditLog({
+      organizationId: org.organizationId,
+      userId: org.userId,
+      action: "email_campaign.send",
+      entity: "EmailCampaign",
+      entityId: existing.id,
+      meta: { recipients: waiting },
+    });
+
+    const run = await processCampaign({ organizationId: org.organizationId, campaignId: existing.id });
+    if (run?.finished) {
+      await notify({
+        organizationId: org.organizationId,
+        event: "campaign_sent",
+        title: `${existing.name}: ${countsLine(run.counts)}`,
+        path: "/email-campaigns",
+      });
+    }
+    return NextResponse.json({
+      status: run?.finished ? "sent" : "sending",
+      sent: run?.sent ?? 0,
+      refused: run?.refused ?? 0,
+      skipped: run?.skipped ?? 0,
+      remaining: run?.remaining ?? waiting,
+    });
   }
 
   // Field edits are only allowed while still a draft.
