@@ -19,6 +19,7 @@ export type NotificationEvent =
   | "new_lead"
   | "approval_requested"
   | "report_ready"
+  | "outreach_reply"
   | "test";
 
 import { channelStatus, type Channel } from "@/lib/notifications/channels";
@@ -45,6 +46,7 @@ const EVENT_LABEL: Record<NotificationEvent, string> = {
   new_lead: "New lead",
   approval_requested: "Needs your review",
   report_ready: "Report ready",
+  outreach_reply: "Prospect replied",
   test: "Test",
 };
 

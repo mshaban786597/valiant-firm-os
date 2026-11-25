@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 import { getDataScope } from "@/lib/scope";
 import { providerFor, salesMetrics } from "@/lib/outreach/engine";
+import { dailyLimit } from "@/lib/outreach/pace";
 import { REPLY_LABELS, type ReplyLabel } from "@/lib/outreach/sequence";
 import { formatCurrency } from "@/lib/utils";
 
@@ -201,7 +202,7 @@ export default async function OutreachPage({ searchParams }: { searchParams?: { 
         business days, then a final one 5 business days later. Suppression, replies and bookings are
         rechecked before every send.{" "}
         {sender
-          ? `Sender in this scope: ${sender.name === "test" ? "test sender (nothing leaves the app)" : sender.name}.`
+          ? `Sender in this scope: ${sender.name === "test" ? "test sender (nothing leaves the app)" : sender.name === "mailbox" ? `your outreach mailbox, at most ${dailyLimit()} a day after a three-week warm-up` : sender.name}.`
           : "Real outreach sending is switched off, so approved emails stay scheduled and nothing is sent."}
       </div>
 

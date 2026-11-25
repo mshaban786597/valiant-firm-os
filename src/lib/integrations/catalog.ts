@@ -144,8 +144,16 @@ export const INTEGRATIONS: ToolIntegration[] = [
     id: "email-alerts",
     name: "Email alerts (Resend)",
     category: "Notifications",
-    powers: "Incident, lead and approval alerts by email; approved outreach sending",
+    powers: "Incident, lead and approval alerts by email",
     envVars: ["RESEND_API_KEY", "ALERT_EMAIL_TO"],
+    data: "live",
+  },
+  {
+    id: "outreach-mailbox",
+    name: "Outreach mailbox",
+    category: "Notifications",
+    powers: "Approved outreach emails, sent from your own mailbox with a daily limit",
+    envVars: ["OUTREACH_SMTP_USER", "OUTREACH_SMTP_PASSWORD"],
     data: "live",
   },
   {

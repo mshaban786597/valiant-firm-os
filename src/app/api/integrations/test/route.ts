@@ -7,6 +7,7 @@ import { getIntegration } from "@/lib/integrations/catalog";
 import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
 import { UBERSUGGEST, testUbersuggest } from "@/lib/integrations/ubersuggest";
 import { GOOGLE_ADS_ID, readGoogleAds } from "@/lib/integrations/google-ads-sync";
+import { testMailbox } from "@/lib/outreach/mailbox";
 
 export const runtime = "nodejs";
 
@@ -37,6 +38,10 @@ export async function POST(req: Request) {
     // A real read of every Ads account the service account can reach. Saves nothing.
     const r = await readGoogleAds();
     result = { ok: r.ok, detail: r.message };
+    realCall = true;
+  } else if (tool.id === "outreach-mailbox") {
+    // A real sign-in to the mailbox. Sends nothing.
+    result = await testMailbox();
     realCall = true;
   } else {
     result = await testIntegration(tool);

@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     take: 50,
   });
 
-  const totals = { due: 0, sent: 0, canceled: 0, failed: 0, needsReconcile: 0, skippedNoProvider: 0, reconciled: 0 };
+  const totals = { due: 0, sent: 0, canceled: 0, failed: 0, needsReconcile: 0, skippedNoProvider: 0, heldDailyLimit: 0, reconciled: 0 };
   for (const { organizationId } of orgs) {
     const rec = await reconcileSends({ organizationId, isDemo: false });
     const run = await processDueSends({ organizationId, isDemo: false });
@@ -36,11 +36,12 @@ export async function GET(req: Request) {
     totals.failed += run.failed;
     totals.needsReconcile += run.needsReconcile + rec.stillAmbiguous;
     totals.skippedNoProvider += run.skippedNoProvider;
+    totals.heldDailyLimit += run.heldDailyLimit;
   }
 
   await telemetry.info({
     source: "cron.process-outreach",
-    message: `Outreach: ${totals.sent} sent, ${totals.canceled} canceled, ${totals.needsReconcile} need reconcile`,
+    message: `Outreach: ${totals.sent} sent, ${totals.canceled} canceled, ${totals.heldDailyLimit} held for the daily allowance, ${totals.needsReconcile} need reconcile`,
   });
   return NextResponse.json({ success: true, ...totals });
 }

@@ -14,6 +14,8 @@ import {
   type ReplyLabel,
 } from "@/lib/outreach/sequence";
 import { buildFollowUp, draftOptionsFromEnv } from "@/lib/outreach/draft";
+import { mailboxConfig, mailboxProvider } from "@/lib/outreach/mailbox";
+import { dailyAllowance, dailyLimit, runBudget, windowStart } from "@/lib/outreach/pace";
 
 /**
  * Outreach engine: sequence scheduling, guarded sending, replies and meetings.
@@ -26,6 +28,8 @@ import { buildFollowUp, draftOptionsFromEnv } from "@/lib/outreach/draft";
  *  - an ambiguous provider response becomes `needs_reconcile` and is never
  *    blindly retried; reconciling re-uses the same idempotency key
  *  - sends to fixture leads only ever use the test provider
+ *  - real sends are paced: a daily allowance that warms up over three weeks,
+ *    spread across scheduler runs
  */
 
 // ---- providers ---------------------------------------------------------------
@@ -44,6 +48,11 @@ export interface SendReceipt {
 }
 export interface OutreachProvider {
   name: string;
+  /**
+   * False when sending the same request twice would deliver two emails (plain
+   * SMTP). Such a sender is never asked again about an unclear send.
+   */
+  idempotent?: boolean;
   send(req: SendRequest): Promise<SendReceipt>;
 }
 
@@ -92,10 +101,11 @@ export function resendProvider(env: Record<string, string | undefined> = process
 
 /**
  * Real outreach email is OFF unless it is switched on explicitly:
- * OUTREACH_LIVE_SENDING="true" AND a sender key. A sender key alone sends nothing.
+ * OUTREACH_LIVE_SENDING="true" AND a sender (the outreach mailbox, or a Resend
+ * key). A sender alone sends nothing.
  */
 export function liveSendingEnabled(env: Record<string, string | undefined> = process.env): boolean {
-  return env.OUTREACH_LIVE_SENDING === "true" && !!env.RESEND_API_KEY;
+  return env.OUTREACH_LIVE_SENDING === "true" && (!!mailboxConfig(env) || !!env.RESEND_API_KEY);
 }
 
 /**
@@ -112,13 +122,18 @@ export function recipientAllowed(to: string, env: Record<string, string | undefi
   return list.indexOf("*") !== -1 || list.indexOf(to.trim().toLowerCase()) !== -1;
 }
 
-/** Fixture leads → test provider only. Real leads → Resend only when live sending is switched on. */
+/**
+ * Fixture leads → test provider only. Real leads → a real sender, only when live
+ * sending is switched on. The outreach mailbox wins when it is configured: cold
+ * outreach belongs on a mailbox, not on a transactional email service.
+ */
 export function providerFor(
   isDemo: boolean,
   env: Record<string, string | undefined> = process.env,
 ): OutreachProvider | null {
   if (isDemo) return testProvider;
-  return liveSendingEnabled(env) ? resendProvider(env) : null;
+  if (!liveSendingEnabled(env)) return null;
+  return mailboxConfig(env) ? mailboxProvider(env) : resendProvider(env);
 }
 
 // ---- sequence ------------------------------------------------------------------
@@ -173,6 +188,8 @@ export interface ProcessSummary {
   skippedNoProvider: number;
   /** Held because the recipient is not on the allowed list (real sender only). */
   heldNotAllowed: number;
+  /** Held until later because today's allowance or this run's share is used up (real sender only). */
+  heldDailyLimit: number;
 }
 
 /**
@@ -190,7 +207,32 @@ export async function processDueSends(input: {
 }): Promise<ProcessSummary> {
   const now = input.now ?? new Date();
   const provider = input.provider === undefined ? providerFor(input.isDemo) : input.provider;
-  const summary: ProcessSummary = { due: 0, sent: 0, canceled: 0, failed: 0, needsReconcile: 0, skippedNoProvider: 0, heldNotAllowed: 0 };
+  const summary: ProcessSummary = {
+    due: 0,
+    sent: 0,
+    canceled: 0,
+    failed: 0,
+    needsReconcile: 0,
+    skippedNoProvider: 0,
+    heldNotAllowed: 0,
+    heldDailyLimit: 0,
+  };
+
+  // A real sender is paced. Counted over every real send of the organization,
+  // so switching sender does not reset the allowance.
+  let budget = Number.POSITIVE_INFINITY;
+  if (provider && provider.name !== "test") {
+    const real = { organizationId: input.organizationId, isDemo: false, provider: { not: "test" } };
+    const [first, recent] = await Promise.all([
+      prisma.outreachSend.findFirst({
+        where: { ...real, sentAt: { not: null } },
+        orderBy: { sentAt: "asc" },
+        select: { sentAt: true },
+      }),
+      prisma.outreachSend.count({ where: { ...real, sentAt: { gte: windowStart(now) } } }),
+    ]);
+    budget = runBudget(dailyAllowance(first?.sentAt ?? null, now, dailyLimit()), recent);
+  }
 
   const due = await prisma.outreachSend.findMany({
     where: {
@@ -241,6 +283,10 @@ export async function processDueSends(input: {
       summary.heldNotAllowed++;
       continue;
     }
+    if (budget <= 0) {
+      summary.heldDailyLimit++;
+      continue; // stays scheduled; the next run or the next day picks it up
+    }
 
     // Claim: only one worker can move scheduled → sending.
     const claim = await prisma.outreachSend.updateMany({
@@ -249,6 +295,7 @@ export async function processDueSends(input: {
     });
     if (claim.count === 0) continue;
     claims++;
+    budget--; // an attempt uses the allowance even when its outcome is unclear
     if (input.crashAfterClaims !== undefined && claims >= input.crashAfterClaims) {
       throw new Error("Simulated worker restart after claim");
     }
@@ -327,7 +374,8 @@ export async function reconcileSends(input: {
   let reconciled = 0;
   let stillAmbiguous = 0;
   for (const send of stuck) {
-    if (!provider || (provider.name !== "test" && !recipientAllowed(send.toEmail))) {
+    // A sender that cannot deduplicate is never asked again: that could deliver twice.
+    if (!provider || provider.idempotent === false || (provider.name !== "test" && !recipientAllowed(send.toEmail))) {
       stillAmbiguous++;
       continue;
     }

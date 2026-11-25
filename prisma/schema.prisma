@@ -1404,7 +1404,7 @@ model OutreachSend {
   status            String    @default("scheduled") // scheduled | sent | canceled | failed | needs_reconcile
   scheduledFor      DateTime
   sentAt            DateTime?
-  provider          String? // test | resend
+  provider          String? // test | resend | mailbox
   providerMessageId String?
   threadId          String?
   toEmail           String
