@@ -7,11 +7,13 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast-provider";
 import { useCan } from "@/components/providers/permissions-provider";
 import { errorMessageFromResponse } from "@/lib/api-error";
+import { EmailConsentToggle } from "@/components/email/email-consent-toggle";
 
 export type ContactRow = {
   id: string;
   name: string;
   email: string | null;
+  emailConsent: boolean;
   phone: string | null;
   title: string | null;
   clientName: string | null;
@@ -65,13 +67,13 @@ export function ContactsWorkspace({
           description="Add the people you work with at each client account."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Client</th>
-                <th className="px-4 py-3">Email</th>
+                <th className="px-4 py-3">Email · marketing</th>
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Tags</th>
                 {canWrite ? <th className="px-4 py-3 text-right">Actions</th> : null}
@@ -85,7 +87,14 @@ export function ContactsWorkspace({
                     <div className="text-xs text-muted">{c.title ?? "—"}</div>
                   </td>
                   <td className="px-4 py-3 text-muted">{c.clientName ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">{c.email ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted">
+                    <div>{c.email ?? "—"}</div>
+                    {c.email && canWrite ? (
+                      <div className="mt-1">
+                        <EmailConsentToggle kind="contact" id={c.id} agreed={c.emailConsent} hasEmail />
+                      </div>
+                    ) : null}
+                  </td>
                   <td className="px-4 py-3 text-muted">{c.phone ?? "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">

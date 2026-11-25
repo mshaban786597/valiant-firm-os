@@ -16,6 +16,7 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
         card: "var(--card)",
+        surface: "var(--surface)",
         "card-border": "var(--card-border)",
         muted: "var(--muted)",
         accent: {
@@ -27,7 +28,13 @@ const config: Config = {
           soft: "var(--accent-soft)",
         },
       },
+      borderRadius: {
+        lg: "0.75rem",
+        xl: "1.25rem",
+        "2xl": "1.5rem",
+      },
       boxShadow: {
+        card: "var(--shadow-card)",
         shell: "0 12px 60px rgba(15, 23, 42, 0.08)",
         "shell-dark": "0 12px 60px rgba(0, 0, 0, 0.35)",
       },

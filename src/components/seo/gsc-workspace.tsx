@@ -18,6 +18,14 @@ export type GscRow = {
   avgPosition: number | null;
   keywordCount: number;
   lastSyncAt: string | null;
+  dataSource: string;
+  syncState: string;
+  stateCopy: string;
+  lastAttemptAt: string | null;
+  dataThrough: string | null;
+  propertyType: string | null;
+  ctrPct: number | null;
+  disconnected: boolean;
 };
 
 type ClientOption = { id: string; businessName: string };
@@ -44,7 +52,8 @@ export function GscWorkspace({
         body: body ? JSON.stringify(body) : undefined,
       });
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
-      toast.success("Updated.");
+      const data = (await res.json().catch(() => null)) as { message?: string } | null;
+      toast.success(data?.message ?? "Updated.");
       router.refresh();
     } finally {
       setBusyId(null);
@@ -66,10 +75,10 @@ export function GscWorkspace({
       {properties.length === 0 ? (
         <EmptyState
           title="No Search Console properties"
-          description="Add a verified site to pull click, impression, and position data."
+          description="Add the exact Search Console property (for example sc-domain:example.com or https://example.com/), then test access and sync."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>
@@ -77,24 +86,38 @@ export function GscWorkspace({
                 <th className="px-4 py-3">Client</th>
                 <th className="px-4 py-3">Clicks (28d)</th>
                 <th className="px-4 py-3">Impressions</th>
+                <th className="px-4 py-3">CTR</th>
                 <th className="px-4 py-3">Avg pos</th>
-                <th className="px-4 py-3">Verified</th>
+                <th className="px-4 py-3">Data</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {properties.map((p) => (
                 <tr key={p.id} className="border-t border-card-border hover:bg-background/30">
-                  <td className="px-4 py-3 font-semibold">{p.siteUrl}</td>
+                  <td className="px-4 py-3">
+                    <div className="font-semibold">{p.siteUrl}</div>
+                    <div className="text-xs text-muted">
+                      {p.propertyType === "domain" ? "Domain property" : p.propertyType === "url_prefix" ? "URL-prefix property" : "Property type not verified"}
+                      {" · read-only"}
+                    </div>
+                  </td>
                   <td className="px-4 py-3 text-muted">{p.clientName ?? "—"}</td>
                   <td className="px-4 py-3">{p.clicks28d.toLocaleString()}</td>
                   <td className="px-4 py-3">{p.impressions28d.toLocaleString()}</td>
+                  <td className="px-4 py-3">{p.ctrPct != null ? `${p.ctrPct.toFixed(1)}%` : "—"}</td>
                   <td className="px-4 py-3">{p.avgPosition != null ? p.avgPosition.toFixed(1) : "—"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 text-xs">
                     <StatusBadge
-                      label={p.verified ? "Verified" : "Unverified"}
-                      variant={p.verified ? "success" : "warning"}
+                      label={p.disconnected ? "Disconnected" : p.dataSource === "live" ? "Live (Search Console)" : p.dataSource === "sample" ? "Sample data" : "No data yet"}
+                      variant={p.disconnected ? "neutral" : p.dataSource === "live" ? "success" : p.dataSource === "sample" ? "warning" : "neutral"}
                     />
+                    <div className="mt-1 text-muted">{p.stateCopy}</div>
+                    <div className="text-muted">
+                      Last attempt {p.lastAttemptAt ? new Date(p.lastAttemptAt).toLocaleString() : "never"} · last success{" "}
+                      {p.lastSyncAt ? new Date(p.lastSyncAt).toLocaleString() : "never"}
+                      {p.dataThrough ? ` · data through ${p.dataThrough.slice(0, 10)}` : ""}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
@@ -109,10 +132,18 @@ export function GscWorkspace({
                       <button
                         type="button"
                         disabled={busyId === p.id}
-                        onClick={() => act(p.id, "PATCH", { verified: !p.verified })}
+                        onClick={() => act(p.id, "PATCH", { action: "test" })}
                         className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50"
                       >
-                        {p.verified ? "Unverify" : "Verify"}
+                        Test access
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === p.id}
+                        onClick={() => act(p.id, "PATCH", { action: "disconnect" })}
+                        className="rounded-lg border border-card-border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-50"
+                      >
+                        Disconnect
                       </button>
                       <button
                         type="button"
@@ -190,7 +221,7 @@ function AddPropertyModal({
         <label className="block text-xs font-semibold text-muted">
           Site URL
           <input
-            placeholder="https://example.com/"
+            placeholder="sc-domain:example.com or https://example.com/"
             value={siteUrl}
             onChange={(e) => setSiteUrl(e.target.value)}
             className={input}

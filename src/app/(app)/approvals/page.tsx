@@ -7,27 +7,29 @@ import {
 } from "@/components/approvals/approvals-workspace";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export const dynamic = "force-dynamic";
 
 export default async function ApprovalsPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const [pending, history, approvedCount, rejectedCount, leads] = await Promise.all([
     prisma.approvalRequest.findMany({
-      where: { organizationId, status: ApprovalStatus.PENDING },
+      where: { organizationId, isDemo, status: ApprovalStatus.PENDING },
       orderBy: { createdAt: "asc" },
       take: 100,
     }),
     prisma.approvalRequest.findMany({
-      where: { organizationId, status: { not: ApprovalStatus.PENDING } },
+      where: { organizationId, isDemo, status: { not: ApprovalStatus.PENDING } },
       orderBy: { decidedAt: "desc" },
       take: 50,
     }),
-    prisma.approvalRequest.count({ where: { organizationId, status: ApprovalStatus.APPROVED } }),
-    prisma.approvalRequest.count({ where: { organizationId, status: ApprovalStatus.REJECTED } }),
+    prisma.approvalRequest.count({ where: { organizationId, isDemo, status: ApprovalStatus.APPROVED } }),
+    prisma.approvalRequest.count({ where: { organizationId, isDemo, status: ApprovalStatus.REJECTED } }),
     prisma.lead.findMany({
-      where: { organizationId },
+      where: { organizationId, isDemo },
       select: { id: true, businessName: true, email: true },
       orderBy: { createdAt: "desc" },
       take: 200,
@@ -43,6 +45,9 @@ export default async function ApprovalsPage() {
     outcome: a.outcome,
     createdAt: a.createdAt.toISOString(),
     decidedAt: a.decidedAt ? a.decidedAt.toISOString() : null,
+    expiresAt: a.expiresAt ? a.expiresAt.toISOString() : null,
+    executionStatus: a.executionStatus,
+    verificationStatus: a.verificationStatus,
   });
 
   return (

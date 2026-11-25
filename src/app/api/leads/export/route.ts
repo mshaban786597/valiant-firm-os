@@ -1,13 +1,15 @@
 import { requireApiOrg } from "@/lib/api-org";
 import { prisma } from "@/lib/prisma";
 import { toCsv } from "@/lib/export";
+import { getDataScope } from "@/lib/scope";
 
 export async function GET() {
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
   const leads = await prisma.lead.findMany({
-    where: { organizationId: org.organizationId },
+    // Fixture rows never leave in an export.
+    where: { organizationId: org.organizationId, isDemo: getDataScope().isDemo },
     orderBy: { createdAt: "desc" },
     take: 5000,
   });

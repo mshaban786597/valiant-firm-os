@@ -48,7 +48,7 @@ Both pass against the real DB with labeled `[PILOT]` data (removable via `npm ru
 ## Connected providers available this session (could power live pilots next)
 
 Gmail, Google Calendar, Google Drive, **Shopify**, Hostinger (hosting/DNS/domains).
-Still need auth for live audit pilots: GSC, GA4, GBP, Google Ads, Ahrefs/Semrush, Smartlead, Calendly, HubSpot, Stripe. These require `/mcp` authorization or app OAuth.
+Still need auth for live audit pilots: GSC, GA4, GBP, Google Ads, Smartlead, Calendly, HubSpot, Stripe. These require `/mcp` authorization or app OAuth.
 
 ## Quality gates (run every change)
 

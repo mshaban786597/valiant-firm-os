@@ -8,13 +8,16 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
-export default async function LeadsPage({
-  searchParams,
-}: {
-  searchParams?: Record<string, string | undefined>;
-}) {
+export default async function LeadsPage(
+  props: {
+    searchParams?: Promise<Record<string, string | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const q = searchParams?.q?.trim();
   const niche = searchParams?.niche?.trim();
@@ -42,6 +45,7 @@ export default async function LeadsPage({
   const leads = await prisma.lead.findMany({
     where: {
       organizationId,
+      isDemo,
       ...(filters.length ? { AND: filters } : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -50,7 +54,7 @@ export default async function LeadsPage({
 
   const niches = await prisma.lead.groupBy({
     by: ["niche"],
-    where: { organizationId },
+    where: { organizationId, isDemo },
   });
 
   const won = new Set<LeadStatus>([LeadStatus.ClosedWon]);
@@ -127,10 +131,10 @@ export default async function LeadsPage({
       {leads.length === 0 ? (
         <EmptyState
           title="No leads yet"
-          description="Create your first lead or run the database seed for demo data."
+          description="Add your first lead to start the list."
         />
       ) : (
-      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>

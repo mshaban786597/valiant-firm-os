@@ -6,11 +6,12 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function GbpDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function GbpDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const location = await prisma.gbpLocation.findFirst({
@@ -38,7 +39,7 @@ export default async function GbpDetailPage({
       </div>
 
       <div className="rounded-xl border border-card-border bg-card p-5 text-sm">
-        <h3 className="text-sm font-semibold">Profile details</h3>
+        <h3 className="section-title">Profile details</h3>
         <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Detail label="GBP ID" value={location.gbpId} />
           <Detail label="Category" value={location.category ?? "—"} />

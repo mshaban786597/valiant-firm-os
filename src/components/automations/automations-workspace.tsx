@@ -53,7 +53,7 @@ export function AutomationsWorkspace({ initial }: { initial: AutomationRow[] }) 
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {items.map((log) => (
-          <div key={log.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+          <div key={log.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold">{log.name}</div>
@@ -83,7 +83,7 @@ export function AutomationsWorkspace({ initial }: { initial: AutomationRow[] }) 
               <button
                 type="button"
                 onClick={() => setDel(log)}
-                className="rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-100"
+                className="rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-600 dark:text-red-200"
               >
                 Delete
               </button>

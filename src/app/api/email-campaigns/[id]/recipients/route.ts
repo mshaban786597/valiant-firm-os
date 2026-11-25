@@ -3,11 +3,10 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { emailRecipientsSchema } from "@/lib/schemas/email-campaign";
+import { consentingAudience, nobodyAgreedMessage, type Candidate } from "@/lib/email/audience";
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("email.write");
   if (!org.ok) return org.response;
 
@@ -29,34 +28,18 @@ export async function POST(
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  // Build the candidate recipient set from the requested source(s).
-  const candidates: { email: string; clientId?: string; leadId?: string }[] = [];
-
-  if (parsed.data.source === "clients") {
-    const clients = await prisma.client.findMany({
-      where: { organizationId: org.organizationId, email: { not: null } },
-      select: { id: true, email: true },
-    });
-    for (const c of clients) {
-      if (c.email) candidates.push({ email: c.email, clientId: c.id });
-    }
-  }
-  if (parsed.data.source === "leads") {
-    const leads = await prisma.lead.findMany({
-      where: { organizationId: org.organizationId, email: { not: null } },
-      select: { id: true, email: true },
-    });
-    for (const l of leads) {
-      if (l.email) candidates.push({ email: l.email, leadId: l.id });
-    }
-  }
+  // Clients, contacts and leads are added only when they agreed to marketing
+  // email. Pasted addresses are the sender's own statement that they agreed.
+  const candidates: Candidate[] = [];
+  const source = parsed.data.source;
+  if (source) candidates.push(...(await consentingAudience(source, org.organizationId)));
   for (const email of parsed.data.emails ?? []) {
     candidates.push({ email });
   }
 
   if (candidates.length === 0) {
     return NextResponse.json(
-      { error: "No recipients with valid email addresses were found." },
+      { error: source ? nobodyAgreedMessage(source) : "No valid email addresses were found." },
       { status: 400 },
     );
   }

@@ -15,7 +15,7 @@ export function PageShell({
   return (
     <>
       <TopBar title={title} actions={actions} />
-      <div className="mx-auto max-w-[1400px] space-y-6 p-4 lg:p-8">{children}</div>
+      <div className="mx-auto max-w-[1400px] space-y-4 p-3 sm:space-y-6 sm:p-4 lg:p-8">{children}</div>
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { OUTREACH_SYSTEM } from "@/lib/ai/prompts";
 import { aiOutreachJson } from "@/lib/ai/llm-json";
+import { OUTREACH_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { fallbackOutreach } from "@/lib/ai/fallbacks";
 import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
@@ -19,12 +20,12 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = fallbackOutreach(parsed.data.lead);
 
   const ai = await aiOutreachJson(
     OUTREACH_SYSTEM,
-    `Lead:\n${JSON.stringify(parsed.data.lead)}\n\nReturn JSON keys: subject_lines (array), email_1..email_4, linkedin_message, sms_message, cta, personalization_notes.`,
+    `Lead:\n${JSON.stringify(parsed.data.lead)}\n\n${OUTREACH_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
@@ -39,8 +40,8 @@ export async function POST(req: Request) {
     status: provider === "rules" ? "fallback" : "success",
     payloadIn: parsed.data,
     payloadOut: output,
-    costEstimate: provider === "rules" ? 0 : 0.12,
-    tokensUsed: provider === "rules" ? 0 : 1400,
+    costEstimate: ai ? ai.costEstimate : 0,
+    tokensUsed: ai ? ai.tokensUsed : 0,
   });
 
   return NextResponse.json({ provider, output });

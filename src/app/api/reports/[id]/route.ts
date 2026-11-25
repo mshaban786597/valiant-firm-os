@@ -24,10 +24,8 @@ const patchSchema = z
   })
   .strict();
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -40,10 +38,8 @@ export async function GET(
   return NextResponse.json({ report });
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -86,10 +82,8 @@ export async function PATCH(
   return NextResponse.json({ report });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 

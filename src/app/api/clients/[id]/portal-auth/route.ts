@@ -12,10 +12,8 @@ async function loadClient(clientId: string, organizationId: string) {
   });
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -30,10 +28,8 @@ export async function GET(
   return NextResponse.json({ tokens });
 }
 
-export async function POST(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -78,10 +74,8 @@ export async function POST(
   });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 

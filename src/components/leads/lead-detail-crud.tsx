@@ -88,7 +88,7 @@ export function LeadDetailCrud({
         <button
           type="button"
           onClick={() => setDelOpen(true)}
-          className="rounded-lg border border-red-500/40 bg-red-950/40 px-3 py-2 text-xs font-semibold text-red-100"
+          className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-100"
         >
           Delete lead
         </button>

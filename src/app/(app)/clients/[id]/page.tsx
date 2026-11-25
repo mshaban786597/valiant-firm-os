@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/layout/page-shell";
 import { ClientDetailCrud } from "@/components/clients/client-detail-crud";
+import { EmailConsentToggle } from "@/components/email/email-consent-toggle";
 import { OnboardingChecklist } from "@/components/clients/onboarding-checklist";
 import { ScoreBadge } from "@/components/ui/score-badge";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -10,11 +11,12 @@ import { money } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function ClientDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ClientDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const client = await prisma.client.findFirst({
@@ -72,6 +74,12 @@ export default async function ClientDetailPage({
             <div className="flex justify-between gap-3 border-b border-card-border py-2">
               <dt className="text-muted">Website</dt>
               <dd className="font-medium">{client.websiteUrl ?? "—"}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-card-border py-2">
+              <dt className="text-muted">Marketing email</dt>
+              <dd>
+                <EmailConsentToggle kind="client" id={client.id} agreed={!!client.emailConsentAt} hasEmail={!!client.email} />
+              </dd>
             </div>
             <div className="flex justify-between gap-3 border-b border-card-border py-2">
               <dt className="text-muted">Targets</dt>

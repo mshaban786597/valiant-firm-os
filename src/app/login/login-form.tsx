@@ -1,8 +1,10 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { ArrowRight, Loader2, Lock, Mail, ShieldCheck } from "lucide-react";
 
 // Map NextAuth error codes to safe, user-facing copy (never leak internals).
 function messageForError(code: string | null | undefined): string | null {
@@ -52,10 +54,10 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md rounded-2xl border border-card-border bg-card p-8 shadow-shell dark:shadow-shell-dark">
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-card-border bg-card p-6 shadow-shell dark:shadow-shell-dark sm:p-8">
         <div className="mb-8 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-valiant shadow-[0_0_30px_rgba(211,4,4,0.35)]" />
+          <BrandMark size={52} className="shrink-0" />
           <div>
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-muted">
               Valiant Firm
@@ -70,27 +72,33 @@ export function LoginForm() {
             <label className="mb-1 block text-xs font-medium text-muted">
               Email
             </label>
-            <input
-              className="w-full rounded-lg border border-card-border bg-background px-3 py-2 text-sm outline-none ring-valiant/30 focus:ring-2"
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+              <input
+              className="w-full rounded-lg border border-card-border bg-background py-2.5 pl-9 pr-3 text-sm outline-none ring-valiant/30 focus:border-valiant/40 focus:ring-2"
               type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted">
               Password
             </label>
-            <input
-              className="w-full rounded-lg border border-card-border bg-background px-3 py-2 text-sm outline-none ring-valiant/30 focus:ring-2"
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" aria-hidden />
+              <input
+              className="w-full rounded-lg border border-card-border bg-background py-2.5 pl-9 pr-3 text-sm outline-none ring-valiant/30 focus:border-valiant/40 focus:ring-2"
               type="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            </div>
           </div>
           {error ? (
             <div className="rounded-lg border border-valiant/40 bg-valiant-soft px-3 py-2 text-xs text-valiant">
@@ -100,12 +108,23 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center rounded-lg bg-valiant py-2.5 text-sm font-semibold text-white shadow-[0_18px_60px_rgba(211,4,4,0.35)] disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br from-[#D30404] to-[#a30303] py-2.5 text-sm font-semibold text-white shadow-[0_14px_40px_-14px_rgba(211,4,4,0.7)] transition hover:brightness-110 disabled:opacity-60"
           >
-            {loading ? "Signing in…" : "Enter command center"}
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Signing in…
+              </>
+            ) : (
+              <>
+                Enter command center
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </>
+            )}
           </button>
         </form>
-        <p className="mt-6 text-xs text-muted">
+        <p className="mt-6 flex items-center gap-2 text-xs text-muted">
+          <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden />
           Authorized Valiant Firm team members only.
         </p>
       </div>

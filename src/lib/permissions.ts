@@ -64,6 +64,9 @@ export const ACTIONS = [
   // billing
   "invoice.read",
   "invoice.write",
+  // tool costs (finance: founder, admin, manager, finance only)
+  "expense.read",
+  "expense.write",
   // marketing integrations (GBP / GSC / Ads)
   "integration.read",
   "integration.write",
@@ -123,6 +126,8 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
     "report.write",
     "report.send",
     "invoice.write",
+    "expense.read",
+    "expense.write",
     "integration.write",
     "email.write",
     "automation.write",
@@ -148,7 +153,7 @@ const ROLE_PERMISSIONS: Record<Role, typeof ALL | Action[]> = {
   // Sales: leads + pipeline + contacts, read the rest.
   SALES: [...READ_ONLY, "lead.write", "deal.write", "contact.write", "approval.request"],
   // Finance: billing + invoices, read the rest.
-  FINANCE: [...READ_ONLY, "invoice.write"],
+  FINANCE: [...READ_ONLY, "invoice.write", "expense.read", "expense.write"],
   // Delivery: task execution + reporting + incident response.
   DELIVERY: [...READ_ONLY, "task.write", "report.write", "monitor.write", "incident.write"],
   // SEO specialist: manages GBP/GSC integrations, tasks, reports, campaigns.

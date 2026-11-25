@@ -56,7 +56,7 @@ export function ReportsWorkspace({
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>
@@ -94,7 +94,7 @@ export function ReportsWorkspace({
                     <button
                       type="button"
                       onClick={() => setDel(r)}
-                      className="rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-100"
+                      className="rounded-md border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-600 dark:text-red-200"
                     >
                       Delete
                     </button>

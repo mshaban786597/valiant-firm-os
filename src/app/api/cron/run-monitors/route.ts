@@ -28,7 +28,8 @@ export async function GET(req: Request) {
   }
 
   const monitors = await prisma.monitor.findMany({
-    where: { enabled: true, type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } },
+    // The scheduler only ever runs live checks; fixtures are driven by hand.
+    where: { enabled: true, isDemo: false, OR: [{ type: { notIn: ["LEAD_ROUTE", "CUSTOM"] } }, { kind: { not: null } }] },
     orderBy: { lastCheckAt: { sort: "asc", nulls: "first" } },
     take: 500,
   });
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
   const due = monitors
     .filter((m) => isMonitorDue(m.lastCheckAt, m.cadenceMinutes, now))
     .slice(0, 80);
-  const summary = await runMonitorsBatch(due, 8);
+  const summary = await runMonitorsBatch(due, 8, "scheduler");
 
   await telemetry.info({
     source: "cron.run-monitors",

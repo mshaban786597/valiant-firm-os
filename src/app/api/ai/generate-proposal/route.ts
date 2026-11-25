@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { PROPOSAL_SYSTEM } from "@/lib/ai/prompts";
 import { aiProposalJson } from "@/lib/ai/llm-json";
+import { PROPOSAL_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { fallbackProposal } from "@/lib/ai/fallbacks";
 import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = fallbackProposal({
     lead: parsed.data.lead,
     call_notes: parsed.data.call_notes,
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   const ai = await aiProposalJson(
     PROPOSAL_SYSTEM,
     JSON.stringify(parsed.data) +
-      `\n\nReturn JSON keys: executive_summary, current_problem, opportunity, recommended_solution, scope_of_work (array), plan_30_day (array), plan_60_day (array), plan_90_day (array), pricing (string), expected_outcomes (array), next_steps (array).`,
+      `\n\n${PROPOSAL_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
@@ -48,8 +49,8 @@ export async function POST(req: Request) {
     status: provider === "rules" ? "fallback" : "success",
     payloadIn: parsed.data,
     payloadOut: output,
-    costEstimate: provider === "rules" ? 0 : 0.22,
-    tokensUsed: provider === "rules" ? 0 : 2200,
+    costEstimate: ai ? ai.costEstimate : 0,
+    tokensUsed: ai ? ai.tokensUsed : 0,
   });
 
   return NextResponse.json({ provider, proposal: output });

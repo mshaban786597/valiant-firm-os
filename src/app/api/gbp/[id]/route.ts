@@ -3,18 +3,19 @@ import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
 import { gbpUpdateSchema } from "@/lib/schemas/gbp";
-import { sampleGbpInsights } from "@/lib/integrations/sample";
+import { syncGbpLocation } from "@/lib/integrations/gbp-sync";
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 
   const existing = await prisma.gbpLocation.findFirst({
     where: { id: params.id, organizationId: org.organizationId },
-    select: { id: true, gbpId: true },
+    select: { id: true, gbpId: true, accountName: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -26,12 +27,18 @@ export async function PATCH(
 
   const data: Record<string, unknown> = {};
   if (parsed.data.action === "refresh") {
-    // No OAuth configured → deterministic sample refresh.
-    const insights = sampleGbpInsights(`${existing.gbpId}:${Date.now()}`);
-    data.rating = insights.rating;
-    data.reviewCount = insights.reviewCount;
-    data.postsLast30Days = insights.postsLast30Days;
-    data.lastSyncAt = new Date();
+    const r = await syncGbpLocation(existing);
+    await writeAuditLog({
+      organizationId: org.organizationId,
+      userId: org.userId,
+      action: "gbp.refresh",
+      entity: "GbpLocation",
+      entityId: existing.id,
+      meta: { ok: r.ok, state: r.state },
+    });
+    return r.ok
+      ? NextResponse.json({ ok: true, message: r.message })
+      : NextResponse.json({ error: r.message }, { status: r.state === "not_configured" ? 409 : 502 });
   }
   for (const k of ["category", "phone", "website", "address", "clientId"] as const) {
     if (parsed.data[k] !== undefined) data[k] = parsed.data[k];
@@ -53,10 +60,8 @@ export async function PATCH(
   return NextResponse.json({ location });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("integration.write");
   if (!org.ok) return org.response;
 

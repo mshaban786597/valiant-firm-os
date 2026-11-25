@@ -13,12 +13,12 @@ import {
   summarizePageSpeed,
 } from "@/lib/monitoring/analyzers";
 import { channelStatus, formatNotification } from "@/lib/notifications/dispatch";
+import { hasLiveTest, testIntegration } from "@/lib/integrations/catalog-ping";
 import {
   INTEGRATIONS,
   getIntegration,
   integrationState,
   missingEnv,
-  testIntegration,
 } from "@/lib/integrations/catalog";
 import { buildOutreachDraft } from "@/lib/outreach/draft";
 import { NAV_GROUPS, NAV_ITEMS } from "@/components/layout/nav-items";
@@ -134,7 +134,7 @@ describe("website suite", () => {
   });
   it("covers every diagram check exactly once", () => {
     const types = WEBSITE_SUITE.map((s) => s.type);
-    expect(types.length).toBe(9);
+    expect(types.length).toBe(13);
     expect(types.filter((t, i) => types.indexOf(t) !== i)).toEqual([]);
     expect(WEBSITE_SUITE.find((s) => s.type === "UPTIME")?.cadenceMinutes).toBe(15);
   });
@@ -168,20 +168,37 @@ describe("integration catalog", () => {
   it("has unique ids and covers the diagram's tool groups", () => {
     const ids = INTEGRATIONS.map((t) => t.id);
     expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
-    ["gsc", "ga4", "gtm", "google-ads", "ahrefs", "semrush", "ubersuggest", "moz", "surfer", "clearscope",
-      "marketmuse", "frase", "meta-ads", "linkedin-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
+    ["gsc", "ga4", "google-ads", "ubersuggest", "meta-ads", "tiktok-ads", "mailchimp", "slack", "telegram"].forEach(
       (id) => expect(getIntegration(id)).not.toBeNull(),
     );
   });
   it("derives status from env only", () => {
-    const ahrefs = getIntegration("ahrefs")!;
-    expect(integrationState(ahrefs, {})).toBe("not_connected");
-    expect(integrationState(ahrefs, { AHREFS_API_KEY: "  " })).toBe("not_connected");
-    expect(integrationState(ahrefs, { AHREFS_API_KEY: "k" })).toBe("connected");
+    const mailchimp = getIntegration("mailchimp")!;
+    expect(integrationState(mailchimp, {})).toBe("not_connected");
+    expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "  " })).toBe("not_connected");
+    expect(integrationState(mailchimp, { MAILCHIMP_API_KEY: "k" })).toBe("connected");
+    // Tools we do not use are not listed at all.
+    ["ahrefs", "semrush", "moz", "surfer", "clearscope", "marketmuse", "frase", "linkedin-ads", "gtm", "openai", "alsoasked", "answerthepublic"].forEach((id) =>
+      expect(getIntegration(id)).toBeNull(),
+    );
+    expect(hasLiveTest("linkedin-ads")).toBe(false);
+    expect(hasLiveTest("openai")).toBe(false);
+    expect(getIntegration("anthropic")).not.toBeNull();
+    expect(INTEGRATIONS.some((tool) => (tool.category as string) === "Content & Semantic SEO")).toBe(false);
+    // Ubersuggest is connected by signing in, so env alone never connects it (see ubersuggest.test.ts).
+    expect(integrationState(getIntegration("ubersuggest")!, {})).toBe("not_connected");
     expect(missingEnv(getIntegration("ga4")!, { GA4_PROPERTY_ID: "1" })).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON"]);
     expect(integrationState(getIntegration("site-monitor")!, {})).toBe("connected");
+    // PageSpeed works with either the service account or its own API key.
+    const psi = getIntegration("pagespeed")!;
+    expect(integrationState(psi, {})).toBe("not_connected");
+    expect(missingEnv(psi, {})).toEqual(["GOOGLE_SERVICE_ACCOUNT_JSON or PAGESPEED_API_KEY"]);
+    expect(integrationState(psi, { GOOGLE_SERVICE_ACCOUNT_JSON: "{}" })).toBe("connected");
+    expect(integrationState(psi, { PAGESPEED_API_KEY: "k" })).toBe("connected");
   });
   it("never calls a provider when credentials are missing", async () => {
+    expect(hasLiveTest("stripe")).toBe(true);
+    expect(hasLiveTest("ubersuggest")).toBe(false);
     const r = await testIntegration(getIntegration("stripe")!, {});
     expect(r).toEqual({ ok: false, detail: "Missing: STRIPE_SECRET_KEY" });
   });

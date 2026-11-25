@@ -8,7 +8,7 @@ import { requireSessionOrg } from "@/lib/session-org";
 export default async function GoogleAdsPage() {
   const { organizationId } = await requireSessionOrg();
 
-  const [campaigns, clients] = await Promise.all([
+  const [campaigns, clients, connection] = await Promise.all([
     prisma.googleAdsCampaign.findMany({
       where: { organizationId },
       include: { client: { select: { businessName: true } } },
@@ -19,6 +19,10 @@ export default async function GoogleAdsPage() {
       where: { organizationId },
       select: { id: true, businessName: true },
       orderBy: { businessName: "asc" },
+    }),
+    prisma.integrationVerification.findUnique({
+      where: { organizationId_integrationId: { organizationId, integrationId: "google-ads" } },
+      select: { lastTestAt: true, lastTestOk: true, lastTestDetail: true },
     }),
   ]);
 
@@ -46,6 +50,28 @@ export default async function GoogleAdsPage() {
         <KpiCard label="Clicks" value={totalClicks.toLocaleString()} />
         <KpiCard label="Conversions" value={String(totalConv)} />
         <KpiCard label="Blended CPA" value={blendedCpa != null ? formatCents(blendedCpa) : "—"} />
+      </div>
+      <div className="rounded-xl border border-card-border bg-card p-4 text-sm shadow-card">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="font-semibold text-foreground">Google Ads connection</span>
+          <span
+            className={
+              connection?.lastTestOk
+                ? "rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300"
+                : "rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300"
+            }
+          >
+            {connection?.lastTestAt ? (connection.lastTestOk ? "Reading data" : "No data") : "Not synced yet"}
+          </span>
+        </div>
+        <p className="mt-2 text-muted">
+          {connection?.lastTestDetail ??
+            "Press Sync from Google Ads to read the last 30 days of campaign totals from the accounts the service account was added to."}
+        </p>
+        <p className="mt-1 text-xs text-muted">
+          Read only: the app never changes an ad, a budget or a setting. Synced figures cover the last 30 days.
+          {connection?.lastTestAt ? ` Last checked ${connection.lastTestAt.toISOString().slice(0, 16).replace("T", " ")} UTC.` : ""}
+        </p>
       </div>
       <AdsWorkspace campaigns={rows} clients={clients} />
     </PageShell>

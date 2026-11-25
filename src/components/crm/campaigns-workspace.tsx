@@ -78,7 +78,7 @@ export function CampaignsWorkspace({
           description="Create a campaign per channel (Google Ads, Meta, SEO, Email, Ecommerce…) for a client."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>

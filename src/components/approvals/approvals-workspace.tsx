@@ -18,6 +18,9 @@ export type ApprovalRow = {
   outcome: string | null;
   createdAt: string;
   decidedAt: string | null;
+  expiresAt: string | null;
+  executionStatus: string;
+  verificationStatus: string;
 };
 
 type LeadOption = { id: string; businessName: string; hasEmail: boolean };
@@ -50,6 +53,24 @@ export function ApprovalsWorkspace({
   const [draftOpen, setDraftOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
 
+  async function stage(id: string, stageName: "execute" | "verify" | "rollback") {
+    setBusyId(id);
+    try {
+      const res = await fetch(`/api/approvals/${id}/stage`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: stageName }),
+      });
+      if (!res.ok) return toast.error(await errorMessageFromResponse(res));
+      const data = (await res.json()) as { message: string };
+      toast.success(data.message);
+      router.refresh();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function decide(id: string, decision: "APPROVED" | "REJECTED") {
     setBusyId(id);
     try {
@@ -72,7 +93,7 @@ export function ApprovalsWorkspace({
     <div className="space-y-6">
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold">Waiting for review</h2>
+          <h2 className="section-title">Waiting for review</h2>
           {canRequest ? (
             <div className="flex gap-2">
               <button
@@ -100,12 +121,13 @@ export function ApprovalsWorkspace({
         ) : (
           <div className="space-y-3">
             {pending.map((a) => (
-              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+              <div key={a.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="font-semibold">{a.title}</div>
                     <div className="text-xs text-muted">
                       {KIND_LABEL[a.kind] ?? a.kind} · {new Date(a.createdAt).toLocaleString()}
+                      {a.expiresAt ? ` · approval valid until ${new Date(a.expiresAt).toLocaleString()}` : ""}
                     </div>
                   </div>
                   {canDecide ? (
@@ -139,11 +161,11 @@ export function ApprovalsWorkspace({
       </div>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold">Decided</h2>
+        <h2 className="section-title">Decided</h2>
         {history.length === 0 ? (
           <EmptyState title="No decisions yet" description="Approved and rejected requests are kept here." />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -166,7 +188,35 @@ export function ApprovalsWorkspace({
                         variant={a.status === "APPROVED" ? "success" : "neutral"}
                       />
                     </td>
-                    <td className="px-4 py-3 text-xs text-muted">{a.outcome ?? "—"}</td>
+                    <td className="px-4 py-3 text-xs text-muted">
+                      <div>{a.outcome ?? "—"}</div>
+                      {a.kind === "fix" && a.status === "APPROVED" ? (
+                        <div className="mt-2 space-y-2">
+                          <div className="flex flex-wrap gap-1">
+                            <StatusBadge
+                              label={`Execution: ${a.executionStatus.replace(/_/g, " ")}`}
+                              variant={a.executionStatus === "executed" ? "success" : a.executionStatus === "failed" ? "danger" : "neutral"}
+                            />
+                            <StatusBadge
+                              label={`Verification: ${a.verificationStatus}`}
+                              variant={a.verificationStatus === "passed" ? "success" : a.verificationStatus === "failed" ? "danger" : "neutral"}
+                            />
+                          </div>
+                          {canDecide ? (
+                            <div className="flex flex-wrap gap-2">
+                              {a.executionStatus !== "executed" ? (
+                                <button type="button" disabled={busyId === a.id} onClick={() => stage(a.id, "execute")} className="rounded-lg bg-valiant px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50">Mark executed</button>
+                              ) : (
+                                <>
+                                  <button type="button" disabled={busyId === a.id} onClick={() => stage(a.id, "verify")} className="rounded-lg bg-valiant px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50">Verify (re-run check)</button>
+                                  <button type="button" disabled={busyId === a.id} onClick={() => stage(a.id, "rollback")} className="rounded-lg border border-card-border px-2.5 py-1 text-xs font-semibold disabled:opacity-50">Roll back</button>
+                                </>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
                       {a.decidedAt ? new Date(a.decidedAt).toLocaleString() : "—"}
                     </td>

@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { provider, score } = await computeLeadScore(parsed.data);
+  const { provider, score, tokensUsed, costEstimate } = await computeLeadScore(parsed.data);
 
   await logAiEvent({
     organizationId: org.organizationId,
@@ -28,8 +28,8 @@ export async function POST(req: Request) {
     relatedRecord: undefined,
     payloadIn: parsed.data,
     payloadOut: score,
-    costEstimate: provider === "rules" ? 0 : 0.06,
-    tokensUsed: provider === "rules" ? 0 : 900,
+    costEstimate,
+    tokensUsed,
   });
 
   return NextResponse.json({ provider, score });

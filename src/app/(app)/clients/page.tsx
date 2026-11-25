@@ -9,12 +9,14 @@ import { formatCurrency } from "@/lib/utils";
 import { money } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 
 export default async function ClientsPage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const clients = await prisma.client.findMany({
-    where: { organizationId },
+    where: { organizationId, isDemo },
     orderBy: { updatedAt: "desc" },
     take: 250,
   });
@@ -35,7 +37,7 @@ export default async function ClientsPage() {
           description="Close a deal as Won to auto-create a client, or add one manually."
         />
       ) : (
-      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
         <table className="w-full border-collapse text-sm">
           <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
             <tr>

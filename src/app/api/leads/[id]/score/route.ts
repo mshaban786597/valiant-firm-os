@@ -8,10 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { pickAssignee } from "@/lib/automations/assign";
 import { runTrigger } from "@/lib/automations/engine";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("lead.write");
   if (!org.ok) return org.response;
 
@@ -21,7 +19,7 @@ export async function POST(
   if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const input = mapLeadToScoreInput(lead);
-  const { provider, score } = await computeLeadScore(input);
+  const { provider, score, tokensUsed, costEstimate } = await computeLeadScore(input);
 
   await prisma.leadScore.create({
     data: {
@@ -94,8 +92,8 @@ export async function POST(
     relatedRecord: lead.id,
     payloadIn: input,
     payloadOut: score,
-    tokensUsed: provider === "rules" ? 0 : 900,
-    costEstimate: provider === "rules" ? 0 : 0.06,
+    tokensUsed,
+    costEstimate,
   });
 
   return NextResponse.json({ provider, score });

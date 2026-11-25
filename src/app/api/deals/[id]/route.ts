@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
-import { completeDealWonHandoff } from "@/lib/deal-handoff";
+import { attachHandoffContext, completeDealWonHandoff } from "@/lib/deal-handoff";
 import { writeAuditLog } from "@/lib/audit";
 import { runTrigger } from "@/lib/automations/engine";
 
@@ -24,10 +24,8 @@ const patchSchema = z
   })
   .strict();
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("deal.write");
   if (!org.ok) return org.response;
 
@@ -104,7 +102,19 @@ export async function PATCH(
             websiteUrl: existing.lead.websiteUrl,
           }
         : null,
+      isDemo: existing.isDemo,
     });
+
+    // Carry scope, prospect evidence and the meeting summary into delivery (idempotent).
+    if (handoff.clientId) {
+      await attachHandoffContext({
+        organizationId: org.organizationId,
+        clientId: handoff.clientId,
+        leadId: existing.leadId,
+        agreedScope: existing.serviceInterest,
+        isDemo: existing.isDemo,
+      }).catch(() => {});
+    }
 
     // Fire onboarding automations only when a client was actually created.
     if (handoff.created && handoff.clientId) {
@@ -130,10 +140,8 @@ export async function PATCH(
   return NextResponse.json({ deal });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("deal.write");
   if (!org.ok) return org.response;
 

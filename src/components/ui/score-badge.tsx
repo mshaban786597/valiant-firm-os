@@ -10,7 +10,7 @@ export function ScoreBadge({ score }: { score: number | null | undefined }) {
   }
   const variant =
     score >= 80
-      ? "bg-emerald-500/15 text-emerald-600 ring-emerald-500/30 dark:text-emerald-300"
+      ? "bg-emerald-500/15 text-emerald-700 ring-emerald-500/30 dark:text-emerald-300"
       : score >= 65
         ? "bg-sky-500/15 text-sky-700 ring-sky-500/30 dark:text-sky-300"
         : score >= 40

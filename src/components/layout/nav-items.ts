@@ -3,6 +3,8 @@ import {
   BarChart3,
   Bot,
   Briefcase,
+  Globe,
+  Inbox,
   ClipboardCheck,
   ClipboardList,
   Contact,
@@ -18,6 +20,7 @@ import {
   Megaphone,
   Plug,
   Radar,
+  Receipt,
   Rocket,
   Search,
   SearchCode,
@@ -61,16 +64,19 @@ export const NAV_GROUPS: NavGroup[] = [
     title: "Client Operations",
     items: [
       { href: "/clients", label: "Clients", icon: Briefcase },
+      { href: "/sites", label: "Websites", icon: Globe },
+      { href: "/inbox", label: "Leads Inbox", icon: Inbox },
       { href: "/delivery", label: "Delivery", icon: ClipboardList },
       { href: "/monitoring", label: "Monitoring", icon: ShieldAlert },
       { href: "/health", label: "Health", icon: HeartPulse },
       { href: "/seo", label: "SEO / GSC", icon: Search },
+      { href: "/analytics", label: "Analytics (GA4)", icon: LineChart },
       { href: "/gbp", label: "Google Business", icon: MapPin },
       { href: "/google-ads", label: "Google Ads", icon: BarChart3 },
-      { href: "/content", label: "Content", icon: LineChart },
       { href: "/reports", label: "Reports", icon: ActivitySquare },
       { href: "/ecommerce", label: "Ecommerce", icon: ShoppingCart },
       { href: "/billing", label: "Billing", icon: CreditCard },
+      { href: "/expenses", label: "Tool Expenses", icon: Receipt },
     ],
   },
   {
@@ -102,6 +108,13 @@ export const NAV_ITEMS: NavItem[] = NAV_GROUPS.reduce<NavItem[]>(
   (all, g) => all.concat(g.items),
   [],
 );
+
+/** The nav entry a page belongs to (the longest matching address), for its icon. */
+export function navItemFor(pathname: string): NavItem | undefined {
+  return NAV_ITEMS.filter((n) => pathname === n.href || pathname.startsWith(`${n.href}/`)).sort(
+    (a, b) => b.href.length - a.href.length,
+  )[0];
+}
 
 /** True when `pathname` is the given nav href or a nested route under it. */
 export function isActivePath(pathname: string, href: string): boolean {

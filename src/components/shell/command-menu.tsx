@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 
 type Command = { label: string; hint?: string; href: string };
 
@@ -15,7 +16,6 @@ const DESTINATIONS: Command[] = [
   { label: "Campaigns", href: "/campaigns" },
   { label: "Ecommerce", href: "/ecommerce" },
   { label: "Delivery / Tasks", href: "/delivery" },
-  { label: "Content", href: "/content" },
   { label: "Reports", href: "/reports" },
   { label: "Health", href: "/health" },
   { label: "SEO / Search Console", href: "/seo" },
@@ -78,15 +78,15 @@ export function CommandMenu() {
     [router],
   );
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 p-4 pt-[12vh] backdrop-blur-sm"
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-card-border bg-card shadow-shell-dark"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-card-border bg-surface shadow-shell-dark"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -136,6 +136,7 @@ export function CommandMenu() {
           <span>⌘K / Ctrl K</span>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

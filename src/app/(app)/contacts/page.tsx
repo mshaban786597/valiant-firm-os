@@ -25,6 +25,7 @@ export default async function ContactsPage() {
     id: c.id,
     name: c.name,
     email: c.email,
+    emailConsent: !!c.emailConsentAt,
     phone: c.phone,
     title: c.title,
     clientName: c.client?.businessName ?? null,

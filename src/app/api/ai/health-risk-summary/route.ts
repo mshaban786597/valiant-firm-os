@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { HEALTH_RISK_SYSTEM } from "@/lib/ai/prompts";
 import { aiHealthRiskJson } from "@/lib/ai/llm-json";
+import { HEALTH_RISK_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { ruleHealthRiskFromSignals } from "@/lib/ai/rule-health";
 import { logAiEvent } from "@/lib/ai/log";
 import { requireApiOrg } from "@/lib/api-org";
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = ruleHealthRiskFromSignals(
     parsed.data.client_name,
     parsed.data.signals,
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   const ai = await aiHealthRiskJson(
     HEALTH_RISK_SYSTEM,
     JSON.stringify(parsed.data) +
-      `\nSignals already sum to subscores with max totals (25/15/20/10/15/15). Return JSON keys matching schema: band, composite_score, rank_trend_pts, response_pts, payment_pts, engagement_pts, nps_pts, goal_pts, retention_summary, check_in_email.`,
+      `\n\n${HEALTH_RISK_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
@@ -106,8 +107,8 @@ export async function POST(req: Request) {
     payloadIn: parsed.data,
     payloadOut: output,
     relatedRecord: client?.id,
-    costEstimate: provider === "rules" ? 0 : 0.09,
-    tokensUsed: provider === "rules" ? 0 : 1100,
+    costEstimate: ai ? ai.costEstimate : 0,
+    tokensUsed: ai ? ai.tokensUsed : 0,
   });
 
   return NextResponse.json({ provider, health: output });

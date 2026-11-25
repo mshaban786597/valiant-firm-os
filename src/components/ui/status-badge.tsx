@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const VARIANTS: Record<string, string> = {
   success:
-    "bg-emerald-500/15 text-emerald-600 ring-emerald-500/25 dark:text-emerald-300",
+    "bg-emerald-500/15 text-emerald-700 ring-emerald-500/25 dark:text-emerald-300",
   warning: "bg-amber-500/15 text-amber-700 ring-amber-500/25 dark:text-amber-300",
   danger:
     "bg-valiant-soft text-valiant ring-valiant/30 dark:text-red-300 dark:ring-red-400/25",
@@ -20,10 +20,11 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset",
         VARIANTS[variant] ?? VARIANTS.neutral,
       )}
     >
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-80" aria-hidden />
       {label}
     </span>
   );

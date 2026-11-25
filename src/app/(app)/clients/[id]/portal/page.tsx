@@ -8,11 +8,12 @@ import { PrintButton } from "@/components/ui/print-button";
 import { buildPortalData } from "@/lib/portal";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function ClientPortalPreviewPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function ClientPortalPreviewPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
   const data = await buildPortalData(params.id, organizationId);
   if (!data) notFound();

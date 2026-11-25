@@ -29,7 +29,7 @@ Playwright (E2E). API routes run on the **Node.js runtime** (Prisma/bcrypt).
   audited on denial). Never trust org/role from the request body.
 - **Audit every write** via `writeAuditLog`. **Validate every input** with Zod.
 - **AI:** prompts in `ai/prompts.ts`, schemas in `schemas/`, chain in `ai/llm-json.ts`
-  (OpenAI → Anthropic → deterministic fallback in `ai/fallbacks.ts`). Works with no keys.
+  (Claude → deterministic fallback in `ai/fallbacks.ts`). Works with no key.
 - **External calls fail safe:** integrations/email/webhooks gate on env; empty env
   var = "not configured" (never crash). Webhooks are **fail-closed** (reject when the
   signing secret is unset unless `ALLOW_UNVERIFIED_WEBHOOKS=true`).
@@ -59,7 +59,7 @@ npm run test:e2e                     # Playwright (needs: playwright install + d
 
 ## Env (see .env.example)
 Required for auth: `DATABASE_URL`, `NEXTAUTH_SECRET` (or `AUTH_SECRET`), `NEXTAUTH_URL`.
-Optional (empty = feature off): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `RESEND_API_KEY`,
+Optional (empty = feature off): `ANTHROPIC_API_KEY`, `RESEND_API_KEY`,
 `WEBHOOK_SECRET*`, `CRON_SECRET`, `ALLOW_OUTBOUND_WEBHOOKS`, `ALLOW_UNVERIFIED_WEBHOOKS`.
 Health check: `GET /api/health` reports server/db/schema/authConfigured (no secret values).
 

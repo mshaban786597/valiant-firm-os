@@ -15,7 +15,13 @@ export type IntegrationRow = {
   powers: string;
   connected: boolean;
   missing: string[];
-  data: "live" | "sample" | "planned";
+  data: "live" | "sample" | "planned" | "imported";
+  /** For tools connected by signing in; null for tools connected with a key. */
+  signIn: "connected" | "needs_reauth" | "not_connected" | null;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastTestDetail: string | null;
+  lastLiveVerifiedAt: string | null;
 };
 
 export type NotificationRow = {
@@ -25,13 +31,15 @@ export type NotificationRow = {
   title: string;
   status: string;
   error: string | null;
+  providerRef: string | null;
   createdAt: string;
 };
 
 function dataBadge(row: IntegrationRow) {
-  if (row.data === "live") return { label: "Live data", variant: "success" as const };
-  if (row.data === "sample") return { label: "Sample data", variant: "warning" as const };
-  return { label: "Connection only", variant: "neutral" as const };
+  if (row.data === "live") return { label: "Supports live data", variant: "info" as const };
+  if (row.data === "imported") return { label: "Imported through Claude", variant: "info" as const };
+  if (row.data === "sample") return { label: "No data until connected", variant: "warning" as const };
+  return { label: "Connection test only", variant: "neutral" as const };
 }
 
 export function IntegrationsWorkspace({
@@ -66,6 +74,25 @@ export function IntegrationsWorkspace({
       if (!res.ok) return toast.error(await errorMessageFromResponse(res));
       const data = (await res.json()) as { ok: boolean; detail: string };
       setResults((p) => ({ ...p, [id]: data }));
+      router.refresh();
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function disconnect(id: string, name: string) {
+    if (!window.confirm(`Disconnect ${name}? Data already stored is kept.`)) return;
+    setBusy(`off:${id}`);
+    try {
+      const res = await fetch(`/api/integrations/${id}`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "disconnect" }),
+      });
+      if (!res.ok) return toast.error(await errorMessageFromResponse(res));
+      toast.success(((await res.json()) as { message: string }).message);
+      router.refresh();
     } finally {
       setBusy(null);
     }
@@ -92,7 +119,7 @@ export function IntegrationsWorkspace({
     <div className="space-y-8">
       {categories.map((cat) => (
         <section key={cat} className="space-y-2">
-          <h2 className="text-sm font-semibold">{cat}</h2>
+          <h2 className="section-title">{cat}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {rows
               .filter((r) => r.category === cat)
@@ -100,7 +127,7 @@ export function IntegrationsWorkspace({
                 const badge = dataBadge(r);
                 const result = results[r.id];
                 return (
-                  <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-sm">
+                  <div key={r.id} className="rounded-xl border border-card-border bg-card p-4 shadow-card">
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-semibold">{r.name}</div>
                       <StatusBadge
@@ -111,6 +138,9 @@ export function IntegrationsWorkspace({
                     <p className="mt-1 text-xs text-muted">{r.powers}</p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge label={badge.label} variant={badge.variant} />
+                      {r.lastLiveVerifiedAt ? (
+                        <StatusBadge label={`Live verified ${new Date(r.lastLiveVerifiedAt).toLocaleDateString()}`} variant="success" />
+                      ) : null}
                       {canTest ? (
                         <button
                           type="button"
@@ -122,14 +152,45 @@ export function IntegrationsWorkspace({
                         </button>
                       ) : null}
                     </div>
+                    {r.signIn ? (
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {r.signIn === "connected" ? (
+                          <button
+                            type="button"
+                            disabled={busy === `off:${r.id}`}
+                            onClick={() => disconnect(r.id, r.name)}
+                            className="rounded-lg border border-card-border px-2.5 py-1 text-xs font-semibold text-red-600 dark:text-red-400 disabled:opacity-50"
+                          >
+                            Disconnect
+                          </button>
+                        ) : canTest ? (
+                          <a href={`/api/integrations/${r.id}/connect`} className="rounded-lg bg-valiant px-2.5 py-1 text-xs font-semibold text-white">
+                            {r.signIn === "needs_reauth" ? "Sign in again" : "Connect"}
+                          </a>
+                        ) : null}
+                        <span className="text-[11px] text-muted">
+                          {r.signIn === "connected"
+                            ? "Signed in. The sign-in is stored encrypted."
+                            : r.signIn === "needs_reauth"
+                              ? "The sign-in expired or was withdrawn."
+                              : `You approve the connection on ${r.name}'s own page.`}
+                        </span>
+                      </div>
+                    ) : null}
                     {!r.connected && r.missing.length ? (
                       <p className="mt-2 break-words text-[11px] text-muted">
                         To connect, set: <span className="font-mono">{r.missing.join(", ")}</span>
                       </p>
                     ) : null}
+                    {!result && r.lastTestAt ? (
+                      <p className="mt-2 text-[11px] text-muted">
+                        Last test {new Date(r.lastTestAt).toLocaleString()}: {r.lastTestOk ? "passed" : "failed"}
+                        {r.lastTestDetail ? ` (${r.lastTestDetail})` : ""}
+                      </p>
+                    ) : null}
                     {result ? (
                       <p
-                        className={`mt-2 text-xs font-medium ${result.ok ? "text-emerald-600 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}
+                        className={`mt-2 text-xs font-medium ${result.ok ? "text-emerald-700 dark:text-emerald-300" : "text-valiant dark:text-red-300"}`}
                       >
                         {result.detail}
                       </p>
@@ -143,7 +204,7 @@ export function IntegrationsWorkspace({
 
       <section className="space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Recent alerts</h2>
+          <h2 className="section-title">Recent alerts</h2>
           {canAlert ? (
             <button
               type="button"
@@ -161,7 +222,7 @@ export function IntegrationsWorkspace({
             description="Alerts for website issues, new leads and approvals are listed here with what was actually delivered."
           />
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
                 <tr>
@@ -178,10 +239,11 @@ export function IntegrationsWorkspace({
                     <td className="px-4 py-3 capitalize text-muted">{n.channel}</td>
                     <td className="px-4 py-3">
                       <StatusBadge
-                        label={n.status === "skipped" ? "Not delivered" : n.status === "sent" ? "Sent" : "Failed"}
+                        label={n.status === "skipped" ? "Not attempted" : n.status === "sent" ? "Accepted by provider" : "Failed"}
                         variant={n.status === "sent" ? "success" : n.status === "failed" ? "danger" : "neutral"}
                       />
                       {n.error ? <span className="ml-2 text-xs text-muted">{n.error}</span> : null}
+                      {n.providerRef ? <span className="ml-2 text-xs text-muted">ref {n.providerRef}</span> : null}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-xs text-muted">
                       {new Date(n.createdAt).toLocaleString()}

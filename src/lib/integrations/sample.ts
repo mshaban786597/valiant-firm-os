@@ -6,7 +6,7 @@
  * Until those are connected, "Refresh" actions call these pure functions so
  * dashboards render meaningful, STABLE numbers instead of being empty. Output
  * is a pure function of the seed string (no randomness), so refreshing the same
- * record twice yields identical values — safe for demos and tests.
+ * record twice yields identical values — safe for tests.
  */
 
 /** Small deterministic string hash (FNV-1a style), always non-negative. */

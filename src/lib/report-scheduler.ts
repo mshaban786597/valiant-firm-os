@@ -1,6 +1,7 @@
 import type { Prisma, Report } from "@prisma/client";
 import { REPORT_SUMMARY_SYSTEM } from "@/lib/ai/prompts";
 import { aiReportSummaryJson } from "@/lib/ai/llm-json";
+import { REPORT_SUMMARY_OUTPUT_RULES } from "@/lib/ai/output-rules";
 import { fallbackReportSummary } from "@/lib/ai/fallbacks";
 import { logAiEvent } from "@/lib/ai/log";
 import { prisma } from "@/lib/prisma";
@@ -25,21 +26,23 @@ function toSummaryInput(report: ReportWithClient) {
 }
 
 async function computeSummary(input: ReturnType<typeof toSummaryInput>): Promise<{
-  provider: "openai" | "anthropic" | "rules";
+  provider: "anthropic" | "rules";
   output: ReportSummaryOutput;
+  tokensUsed?: number;
+  costEstimate?: number;
 }> {
-  let provider: "openai" | "anthropic" | "rules" = "rules";
+  let provider: "anthropic" | "rules" = "rules";
   let output = fallbackReportSummary(input);
   const ai = await aiReportSummaryJson(
     REPORT_SUMMARY_SYSTEM,
     JSON.stringify(input) +
-      `\n\nReturn JSON keys: executive_summary, wins_this_month (array), issues_fixed (array), ranking_movements, traffic_summary, gbp_summary, next_30_days (array), client_friendly_explanation.`,
+      `\n\n${REPORT_SUMMARY_OUTPUT_RULES}`,
   );
   if (ai) {
     provider = ai.provider;
     output = ai.value;
   }
-  return { provider, output };
+  return { provider, output, tokensUsed: ai ? ai.tokensUsed : 0, costEstimate: ai ? ai.costEstimate : 0 };
 }
 
 export interface GeneratedReport {
@@ -71,7 +74,7 @@ export async function generateDueReports(
   const generated: GeneratedReport[] = [];
   for (const report of due) {
     const input = toSummaryInput(report);
-    const { provider, output } = await computeSummary(input);
+    const { provider, output, tokensUsed, costEstimate } = await computeSummary(input);
 
     await prisma.report.update({
       where: { id: report.id },
@@ -91,8 +94,8 @@ export async function generateDueReports(
       relatedRecord: report.id,
       payloadIn: input,
       payloadOut: output,
-      costEstimate: provider === "rules" ? 0 : 0.14,
-      tokensUsed: provider === "rules" ? 0 : 1600,
+      costEstimate,
+      tokensUsed,
     });
 
     generated.push({

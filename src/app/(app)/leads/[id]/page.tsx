@@ -1,3 +1,4 @@
+import { EmailConsentToggle } from "@/components/email/email-consent-toggle";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/layout/page-shell";
@@ -9,11 +10,12 @@ import { mapLeadToScoreInput } from "@/lib/mappers/lead";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function LeadDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function LeadDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const lead = await prisma.lead.findFirst({
@@ -59,6 +61,12 @@ export default async function LeadDetailPage({
               <dt className="text-muted">Contact</dt>
               <dd className="font-medium">
                 {lead.email ?? "—"} · {lead.phone ?? "—"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-3 border-b border-card-border py-2">
+              <dt className="text-muted">Marketing email</dt>
+              <dd>
+                <EmailConsentToggle kind="lead" id={lead.id} agreed={!!lead.emailConsentAt} hasEmail={!!lead.email} />
               </dd>
             </div>
             <div className="flex justify-between gap-3 border-b border-card-border py-2">

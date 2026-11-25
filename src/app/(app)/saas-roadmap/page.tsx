@@ -23,7 +23,7 @@ export default async function SaaSRoadmapPage() {
     <PageShell title="SaaS Roadmap">
       <div className="grid gap-4 lg:grid-cols-2">
         {products.map((p) => (
-          <div key={p.id} className="rounded-xl border border-card-border bg-card p-5 shadow-sm">
+          <div key={p.id} className="rounded-xl border border-card-border bg-card p-5 shadow-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-lg font-semibold">{p.productName}</div>

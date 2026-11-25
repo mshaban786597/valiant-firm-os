@@ -6,19 +6,21 @@ import {
 import { PipelineToolbar } from "@/components/pipeline/deal-form-modal";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
+import { getDataScope } from "@/lib/scope";
 import { money } from "@/lib/money";
 
 export default async function PipelinePage() {
   const { organizationId } = await requireSessionOrg();
+  const isDemo = getDataScope().isDemo;
 
   const [deals, leadOptions] = await Promise.all([
     prisma.deal.findMany({
-      where: { organizationId },
+      where: { organizationId, isDemo },
       orderBy: { updatedAt: "desc" },
       take: 300,
     }),
     prisma.lead.findMany({
-      where: { organizationId },
+      where: { organizationId, isDemo },
       select: { id: true, businessName: true },
       orderBy: { businessName: "asc" },
       take: 300,

@@ -80,7 +80,7 @@ export function ClientPortalView({ data }: { data: PortalData }) {
       {data.latestReport ? (
         <Section title="Latest report">
           <div className="rounded-xl border border-card-border bg-card p-5">
-            <h3 className="text-sm font-semibold">{data.latestReport.title}</h3>
+            <h3 className="section-title">{data.latestReport.title}</h3>
             {data.latestReport.summary ? (
               <p className="mt-2 whitespace-pre-line text-sm text-muted">
                 {data.latestReport.summary}

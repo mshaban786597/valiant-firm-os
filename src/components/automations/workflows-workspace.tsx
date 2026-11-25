@@ -106,7 +106,7 @@ export function WorkflowsWorkspace({ workflows }: { workflows: WorkflowRow[] }) 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Workflows</h2>
+        <h2 className="section-title">Workflows</h2>
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -122,7 +122,7 @@ export function WorkflowsWorkspace({ workflows }: { workflows: WorkflowRow[] }) 
           description="Build a trigger → action workflow (e.g. when a deal is won, create an onboarding task)."
         />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-card-border bg-card shadow-card">
           <table className="w-full border-collapse text-sm">
             <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
               <tr>

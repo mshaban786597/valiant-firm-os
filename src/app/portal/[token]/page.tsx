@@ -17,11 +17,12 @@ function ExpiredNotice() {
   );
 }
 
-export default async function PublicPortalPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default async function PublicPortalPage(
+  props: {
+    params: Promise<{ token: string }>;
+  }
+) {
+  const params = await props.params;
   const record = await prisma.clientPortalToken.findUnique({
     where: { token: params.token },
     select: {
@@ -46,7 +47,7 @@ export default async function PublicPortalPage({
     .catch(() => {});
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-8 lg:py-12">
         <div className="mb-4 flex justify-end">
           <PrintButton label="Save as PDF" />

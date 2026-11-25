@@ -3,10 +3,8 @@ import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-org";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 

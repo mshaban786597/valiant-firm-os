@@ -8,11 +8,12 @@ import { formatCents } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireSessionOrg } from "@/lib/session-org";
 
-export default async function StoreDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function StoreDetailPage(
+  props: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  const params = await props.params;
   const { organizationId } = await requireSessionOrg();
 
   const store = await prisma.ecommerceStore.findFirst({
@@ -62,7 +63,7 @@ export default async function StoreDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
-          <h2 className="mb-2 text-sm font-semibold">Top products</h2>
+          <h2 className="section-title mb-2">Top products</h2>
           <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">
@@ -88,7 +89,7 @@ export default async function StoreDetailPage({
         </div>
 
         <div>
-          <h2 className="mb-2 text-sm font-semibold">Recent orders</h2>
+          <h2 className="section-title mb-2">Recent orders</h2>
           <div className="overflow-x-auto rounded-xl border border-card-border bg-card">
             <table className="w-full border-collapse text-sm">
               <thead className="bg-background/40 text-left text-xs uppercase tracking-wide text-muted">

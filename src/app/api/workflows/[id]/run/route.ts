@@ -8,10 +8,8 @@ import { runWorkflow } from "@/lib/automations/engine";
  * context-dependent actions (update_lead_status, create_task without a config
  * client) will report a controlled failure rather than doing anything unsafe.
  */
-export async function POST(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function POST(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("automation.write");
   if (!org.ok) return org.response;
 

@@ -3,14 +3,16 @@ import { requireApiOrg } from "@/lib/api-org";
 import { requirePermission } from "@/lib/api-permission";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/audit";
-import { telemetry } from "@/lib/telemetry";
 import { emailCampaignUpdateSchema } from "@/lib/schemas/email-campaign";
-import { sampleEmailEngagement } from "@/lib/integrations/sample";
+import { notify } from "@/lib/notifications/dispatch";
+import { campaignSender, countsLine } from "@/lib/email/campaign";
+import { processCampaign } from "@/lib/email/campaign-run";
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requireApiOrg();
   if (!org.ok) return org.response;
 
@@ -22,16 +24,14 @@ export async function GET(
   return NextResponse.json({ campaign });
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function PATCH(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("email.write");
   if (!org.ok) return org.response;
 
   const existing = await prisma.emailCampaign.findFirst({
     where: { id: params.id, organizationId: org.organizationId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, name: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -42,63 +42,51 @@ export async function PATCH(
   }
 
   if (parsed.data.action === "send") {
-    if (existing.status === "sent") {
-      return NextResponse.json({ error: "Campaign already sent." }, { status: 409 });
+    // Refuse rather than mark it sent when nothing can really go out.
+    const sender = campaignSender();
+    if (!sender.ready) {
+      return NextResponse.json({ error: `${sender.reason} Nothing was sent.` }, { status: 409 });
     }
-    const recipientCount = await prisma.emailRecipient.count({
-      where: { campaignId: existing.id },
-    });
-    if (recipientCount === 0) {
-      return NextResponse.json(
-        { error: "Add at least one recipient before sending." },
-        { status: 400 },
-      );
+    if (existing.status !== "draft") {
+      return NextResponse.json({ error: "This campaign was already sent." }, { status: 409 });
     }
-
-    // Real dispatch requires an ESP (Resend). Without one, mark as sent and
-    // simulate engagement deterministically (fallback per architecture rules).
-    const dispatched = Boolean(process.env.RESEND_API_KEY);
-    const engagement = sampleEmailEngagement(existing.id, recipientCount);
-    const sentAt = new Date();
-
-    await prisma.$transaction([
-      prisma.emailRecipient.updateMany({
-        where: { campaignId: existing.id },
-        data: { status: "sent", sentAt },
-      }),
-      prisma.emailCampaign.update({
-        where: { id: existing.id },
-        data: {
-          status: "sent",
-          sentAt,
-          recipientCount,
-          opens: engagement.opens,
-          clicks: engagement.clicks,
-          unsubscribes: engagement.unsubscribes,
-        },
-      }),
-    ]);
-
-    await telemetry.info({
-      source: "email.campaign.send",
-      message: dispatched
-        ? `Dispatched campaign to ${recipientCount} recipients`
-        : `Simulated send to ${recipientCount} recipients (no ESP configured)`,
-      organizationId: org.organizationId,
-      userId: org.userId,
-      meta: { campaignId: existing.id, dispatched },
+    const waiting = await prisma.emailRecipient.count({ where: { campaignId: existing.id, status: "pending" } });
+    if (waiting === 0) {
+      return NextResponse.json({ error: "Add recipients first. Nothing was sent." }, { status: 400 });
+    }
+    // Claim the campaign so two clicks cannot start it twice.
+    const claimed = await prisma.emailCampaign.updateMany({
+      where: { id: existing.id, organizationId: org.organizationId, status: "draft" },
+      data: { status: "sending" },
     });
-
+    if (claimed.count === 0) {
+      return NextResponse.json({ error: "This campaign was already sent." }, { status: 409 });
+    }
     await writeAuditLog({
       organizationId: org.organizationId,
       userId: org.userId,
       action: "email_campaign.send",
       entity: "EmailCampaign",
       entityId: existing.id,
-      meta: { recipientCount, dispatched },
+      meta: { recipients: waiting },
     });
 
-    return NextResponse.json({ ok: true, dispatched, recipientCount });
+    const run = await processCampaign({ organizationId: org.organizationId, campaignId: existing.id });
+    if (run?.finished) {
+      await notify({
+        organizationId: org.organizationId,
+        event: "campaign_sent",
+        title: `${existing.name}: ${countsLine(run.counts)}`,
+        path: "/email-campaigns",
+      });
+    }
+    return NextResponse.json({
+      status: run?.finished ? "sent" : "sending",
+      sent: run?.sent ?? 0,
+      refused: run?.refused ?? 0,
+      skipped: run?.skipped ?? 0,
+      remaining: run?.remaining ?? waiting,
+    });
   }
 
   // Field edits are only allowed while still a draft.
@@ -119,10 +107,8 @@ export async function PATCH(
   return NextResponse.json({ campaign });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } },
-) {
+export async function DELETE(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const org = await requirePermission("email.write");
   if (!org.ok) return org.response;
 

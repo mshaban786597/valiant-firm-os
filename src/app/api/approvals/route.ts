@@ -1,3 +1,4 @@
+import { getDataScope } from "@/lib/scope";
 import { NextResponse } from "next/server";
 import { requireApiOrg } from "@/lib/api-org";
 import { requirePermission } from "@/lib/api-permission";
@@ -30,7 +31,12 @@ export async function POST(req: Request) {
   }
 
   const approval = await prisma.approvalRequest.create({
-    data: { organizationId: org.organizationId, requestedBy: org.userId, ...parsed.data },
+    data: {
+      organizationId: org.organizationId,
+      requestedBy: org.userId,
+      isDemo: getDataScope().isDemo,
+      ...parsed.data,
+    },
   });
   await writeAuditLog({
     organizationId: org.organizationId,
@@ -44,6 +50,7 @@ export async function POST(req: Request) {
     event: "approval_requested",
     title: approval.title,
     path: "/approvals",
+    isDemo: approval.isDemo,
   }).catch(() => []);
 
   return NextResponse.json({ approval });
